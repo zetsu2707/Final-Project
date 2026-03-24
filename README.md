@@ -4,8 +4,7 @@ Brief description of your project (1–2 sentences).
 ## Team Members
 - Gabriel Carmona
 - Leonidas Arellano
-- Name 3
-- Name 4 (if applicable)
+- Yoltic Alvarez
 ---
 
 ## Features
