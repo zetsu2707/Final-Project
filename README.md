@@ -3,7 +3,7 @@ Brief description of your project (1–2 sentences).
 ---
 ## Team Members
 - Gabriel Carmona
-- Name 2
+- Leonidas Arellano
 - Name 3
 - Name 4 (if applicable)
 ---
