@@ -8,11 +8,11 @@ A assortment of five short games structured similarly to a casino hall. Beginnin
 ---
 
 ## Features
--- Start Menu / Game Selection
--- User Interface and Game Flow
--- Starting Narrative
--- Replayability
--- Minigames
+- Start Menu / Game Selection
+- User Interface and Game Flow
+- Starting Narrative
+- Replayability
+Minigames:
 - Blackjack
 - Poker
 - Roulette
