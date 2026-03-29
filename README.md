@@ -1,5 +1,5 @@
-# Project Title
-Brief description of your project (1–2 sentences).
+# Congo Cash Casino
+A assortment of five short games structured similarly to a casino hall. Beginning funds are fixed: exactly two hundred dollars, end goal is five thousand dollars. 
 ---
 ## Team Members
 - Gabriel Carmona
@@ -8,11 +8,17 @@ Brief description of your project (1–2 sentences).
 ---
 
 ## Features
-- Start Menu / Game Selection
-- Feature 2 (e.g., Delete items)
-- Feature 3 (e.g., Save/load data)
-- Feature 4 (e.g., Input validation)
-- Feature 5 (e.g., GUI interaction)
+-- Start Menu / Game Selection
+-- User Interface and Game Flow
+-- Starting Narrative
+-- Replayability
+-- Minigames
+- Blackjack
+- Poker
+- Roulette
+- Slot Machine
+- Horse Racing
+
 ---
 ## OOP Concepts Used
 ### Encapsulation
@@ -26,18 +32,21 @@ Brief description of your project (1–2 sentences).
 ---
 ## Team Contributions
 ### Member 1: [Gabriel Carmona]
-- GUI
-- Responsibility 2
-### Member 2: [Name]
+-- Start Menu / Game Selection
+-- User Interface and Game Flow
+-- Starting Narrative
+- Horse Racing
+-- Replayability
+### Member 2: [Leonidas Arellano]
 - Responsibility 1
 - Responsibility 2
-### Member 3: [Name]
+-- Replayability
+### Member 3: [Yoltic Alvarez]
 - Responsibility 1
 - Responsibility 2
+-- Replayability
 ---
 
-## AI and External Resources Disclosure (Required)
-You must clearly document **all external help used** in this project.
 ### AI Tools
 List any AI tools used (e.g., ChatGPT, Copilot, etc.) and describe:
 - What you asked the AI to do
@@ -47,11 +56,13 @@ List any AI tools used (e.g., ChatGPT, Copilot, etc.) and describe:
 
 ### External Resources
 List all non-AI resources used:
-- Websites (e.g., Stack Overflow, tutorials)
-- Documentation
-- YouTube videos
-- Sample code
-Include links when possible.
+-- Websites (e.g., Stack Overflow, tutorials)
+- https://app.diagrams.net/ 
+- https://www.w3schools.com/cpp/cpp_oop.asp
+-- Documentation
+-- YouTube videos
+- https://www.youtube.com/watch?v=lftcRWAIycg&list=PLz6j8tWRKzOHQPOL5gGY4Ev6DoMRB2gee https://www.youtube.com/watch?v=qvg8BXXWpCE
+-- Sample code
 
 ### Collaboration Policy Statement
 All submitted work reflects our team’s understanding. Any external code
