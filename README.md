@@ -31,19 +31,19 @@ A assortment of five short games structured similarly to a casino hall. Beginnin
 ---
 ## Team Contributions
 ### Member 1: [Gabriel Carmona]
--- Start Menu / Game Selection
--- User Interface and Game Flow
--- Starting Narrative
+- Start Menu / Game Selection
+- User Interface and Game Flow
+- Starting Narrative
 - Horse Racing
--- Replayability
+- Replayability
 ### Member 2: [Leonidas Arellano]
 - Responsibility 1
 - Responsibility 2
--- Replayability
+- Replayability
 ### Member 3: [Yoltic Alvarez]
 - Responsibility 1
 - Responsibility 2
--- Replayability
+- Replayability
 ---
 
 ### AI Tools
@@ -55,13 +55,13 @@ List any AI tools used (e.g., ChatGPT, Copilot, etc.) and describe:
 
 ### External Resources
 List all non-AI resources used:
--- Websites (e.g., Stack Overflow, tutorials)
+- Websites (e.g., Stack Overflow, tutorials)
 - https://app.diagrams.net/ 
 - https://www.w3schools.com/cpp/cpp_oop.asp
--- Documentation
--- YouTube videos
+- Documentation
+- YouTube videos
 - https://www.youtube.com/watch?v=lftcRWAIycg&list=PLz6j8tWRKzOHQPOL5gGY4Ev6DoMRB2gee https://www.youtube.com/watch?v=qvg8BXXWpCE
--- Sample code
+- Sample code
 
 ### Collaboration Policy Statement
 All submitted work reflects our team’s understanding. Any external code
