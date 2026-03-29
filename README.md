@@ -12,7 +12,6 @@ A assortment of five short games structured similarly to a casino hall. Beginnin
 - User Interface and Game Flow
 - Starting Narrative
 - Replayability
-Minigames:
 - Blackjack
 - Poker
 - Roulette
