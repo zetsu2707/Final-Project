@@ -8,7 +8,7 @@ Brief description of your project (1–2 sentences).
 ---
 
 ## Features
-- Feature 1 (e.g., Add items)
+- Start Menu / Game Selection
 - Feature 2 (e.g., Delete items)
 - Feature 3 (e.g., Save/load data)
 - Feature 4 (e.g., Input validation)
