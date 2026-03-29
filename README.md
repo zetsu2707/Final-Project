@@ -9,6 +9,7 @@ A assortment of five short games structured similarly to a casino hall. Beginnin
 
 ## Features
 - Start Menu / Game Selection
+- Load / Save Functionality
 - User Interface and Game Flow
 - Starting Narrative
 - Replayability
@@ -41,8 +42,9 @@ A assortment of five short games structured similarly to a casino hall. Beginnin
 - Responsibility 2
 - Replayability
 ### Member 3: [Yoltic Alvarez]
-- Responsibility 1
-- Responsibility 2
+- Load / Save Functionality
+- Poker
+- Slot Machine(s)
 - Replayability
 ---
 

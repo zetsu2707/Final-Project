@@ -3,12 +3,9 @@
 // Date Created: 3/29/2026
 // Last Edited: 3/29/2026
 
-#ifndef HORSERACING_H
-#define HORSERACING_H
-
+#pragma once
 #include "Player.h"
 
 class HorseRacing {
 };
 
-#endif
