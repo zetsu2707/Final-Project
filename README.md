@@ -38,8 +38,8 @@ A assortment of five short games structured similarly to a casino hall. Beginnin
 - Horse Racing
 - Replayability
 ### Member 2: [Leonidas Arellano]
-- Responsibility 1
-- Responsibility 2
+- Blackjack
+- Roulette
 - Replayability
 ### Member 3: [Yoltic Alvarez]
 - Load / Save Functionality
