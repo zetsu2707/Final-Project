@@ -4,7 +4,8 @@
 // Last Edited: 3/29/2026
 
 #pragma once
+#include "CasinoGame.h"
 #include "Player.h"
 
-class Poker {
+class Poker : public CasinoGame {
 };

@@ -22,13 +22,13 @@ A assortment of five short games structured similarly to a casino hall. Beginnin
 ---
 ## OOP Concepts Used
 ### Encapsulation
-- Explain how data is protected using private members and public methods
+- Each game will store its data as private members and only allow controlled access through public methods. Preventing players or other parts of the program from directly changing game values incorrectly Examples: Blackjack: cards, player score, dealer score Poker: player hands, pot amount Roulette: bet amount, selected number/color Slot Machine: reel values, balance
 ### Inheritance
-- Describe any base and derived classes used
+- Using a common parent class, and creating new classes that will inherit from it. Allowing common behavior features like "end game" or "start" while the games have their own definitions. Common base classes include shared data between games and base game functionality. 
 ### Polymorphism
-- Explain function overloading or virtual functions used
+- We will use virtual functions in the base Game class, allowing us to treat all games the same way as they behave differently. 
 ### Composition
-- Describe “has-a” relationships between classes
+- A class may hold a reference or instance of another, forming a “has-a” relationship between them. This represents composition rather than inheritance, where one object relies on another to perform tasks. Instead of deriving behavior, it includes another object within its structure, gaining functionality through use rather than hierarchy.
 ---
 ## Team Contributions
 ### Member 1: [Gabriel Carmona]
@@ -48,16 +48,17 @@ A assortment of five short games structured similarly to a casino hall. Beginnin
 - Replayability
 ---
 
+<!--
 ### AI Tools
+No AI Tools Used Yet
 List any AI tools used (e.g., ChatGPT, Copilot, etc.) and describe:
 - What you asked the AI to do
 - What code or explanation it generated
 - What you modified or learned from it
-
+-->
 
 ### External Resources
-List all non-AI resources used:
-- Websites (e.g., Stack Overflow, tutorials)
+<!-- List all non-AI resources used: -->
 - https://app.diagrams.net/ 
 - https://www.w3schools.com/cpp/cpp_oop.asp
 - Documentation
