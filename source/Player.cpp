@@ -11,14 +11,39 @@ Player::Player(const std::string_view name, double startingBalance)
       m_totalBetted(0.0), m_totalWon(0.0),
       m_gamesPlayed(0), m_gamesWon(0) {}
 
-std::string Player::getName() const;
-double Player::getBalance() const;
-double Player::getTotalBetted() const;
-double Player::getTotalWon() const;
+std::string Player::getName() const {
+    return m_name;
+}
 
-bool Player::placeBet(double amount);
-void Player::addWinnings(double amount);
-bool Player::hasSufficientFunds(double amount) const;
+double Player::getBalance() const {
+    return m_balance;
+}
+
+double Player::getTotalBetted() const {
+    return m_totalBetted;
+}
+
+double Player::getTotalWon() const {
+    return m_totalWon;
+}
+
+// 
+bool Player::placeBet(double amount) {
+    if (amount <= 0) return false;
+    m_balance -= amount;
+    m_totalBetted += amount;
+    return true;
+}
+
+void Player::addWinnings(double amount) {
+    m_balance += amount;
+    m_totalWon += amount;
+}
+
+bool Player::hasSufficientFunds(double amount) const {
+    return m_balance >= amount;
+}
+
 
 bool Player::saveToFile(const std::string& filepath) const {
     std::ofstream outFile("data/" + filepath);

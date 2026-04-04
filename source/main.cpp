@@ -20,6 +20,8 @@ int main() {
         std::cout << "4. Load Player 2\n";
         std::cout << "5. Display Player 1\n";
         std::cout << "6. Display Player 2\n";
+        std::cout << "7. Create New Player 1\n";
+        std::cout << "8. Create New Player 2\n";
         std::cout << "0. Exit\n";
         std::cout << "Choice: ";
         std::cin >> choice;
@@ -62,6 +64,32 @@ int main() {
                 std::cout << "Name: " << player2.getName() << '\n';
                 std::cout << "Balance: $" << player2.getBalance() << '\n';
                 break;
+
+            case 7: {
+                std::string name;
+                double balance;
+                std::cout << "Enter name: ";
+                std::cin.ignore();
+                std::getline(std::cin, name);
+                std::cout << "Enter starting balance: ";
+                std::cin >> balance;
+                player1 = Player(name, balance);
+                std::cout << "Player 1 created: " << player1.getName() << " $" << player1.getBalance() << '\n';
+                break;
+            }
+
+            case 8: {
+                std::string name;
+                double balance;
+                std::cout << "Enter name: ";
+                std::cin.ignore();
+                std::getline(std::cin, name);
+                std::cout << "Enter starting balance: ";
+                std::cin >> balance;
+                player2 = Player(name, balance);
+                std::cout << "Player 2 created: " << player2.getName() << " $" << player2.getBalance() << '\n';
+                break;
+            }
 
             case 0:
                 running = false;
