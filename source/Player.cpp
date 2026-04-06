@@ -1,7 +1,7 @@
 // Description: Implementation file for the Player class.
 // Related Files:
 // Date Created: 3/29/2026
-// Last Edited: 4/4/2026
+// Last Edited: 4/5/2026
 
 #include <fstream>
 #include "Player.h"
@@ -27,23 +27,42 @@ double Player::getTotalWon() const {
     return m_totalWon;
 }
 
-// 
+int Player::getGamesPlayed() const {
+    return m_gamesPlayed;
+}
+
+int Player::getGamesWon() const {
+    return m_gamesWon;
+}
+
+double Player::getNetProfit() const {
+    return m_totalWon - m_totalBetted;
+}
+
 bool Player::placeBet(double amount) {
-    if (amount <= 0) return false;
+    if (amount <= 0.0) {
+        return false;
+    }
+
+    if (!hasSufficientFunds(amount)) {
+        return false;
+    }
+
     m_balance -= amount;
     m_totalBetted += amount;
     return true;
 }
 
 void Player::addWinnings(double amount) {
-    m_balance += amount;
-    m_totalWon += amount;
+    if (amount > 0.0) {
+        m_balance += amount;
+        m_totalWon += amount;
+    }
 }
 
 bool Player::hasSufficientFunds(double amount) const {
-    return m_balance >= amount;
+    return amount > 0.0 && m_balance >= amount;
 }
-
 
 bool Player::saveToFile(const std::string& filepath) const {
     std::ofstream outFile("data/" + filepath);

@@ -1,31 +1,22 @@
-// Header file for CasinoGame class.
-// Related Files:
+// Header file for CasinoGame menu/controller class.
+// Related Files: CasinoGame.cpp, Player.h, Blackjack.h, HorseRace.h, Roulette.h, Slots.h, Poker.h
 // Date Created: 3/29/2026
-// Last Edited: 3/29/2026
+// Last Edited: 4/5/2026
 
 #pragma once
+
 #include "Player.h"
 #include <string>
-#include <random>
 
 class CasinoGame {
 public:
-    explicit CasinoGame(std::string name, double minimumBet = 1.0);
-    virtual ~CasinoGame() = default;
+    CasinoGame() = default;
+    void run(Player& player);
 
-    // Every subclass must implement this
-    virtual void play(Player& player) = 0;
+private:
+    void displayMenu(const Player& player) const;
+    void displayPlayerStats(const Player& player) const;
+    void saveGame(Player& player) const;
 
-    const std::string& getName() const;
-    double getMinimumBet() const;
-
-protected:
-    // Shared helpers available to all subclasses
-    double getBetAmount(const Player& player) const;
-    void displayBalance(const Player& player) const;
-    static void clearInput();
-
-    std::string m_name;
-    double m_minimumBet;
-    std::mt19937 m_rng;
+    int getValidatedInt(const std::string& prompt, int minValue, int maxValue) const;
 };
