@@ -104,11 +104,11 @@ private:
     void showBanner() const;
     double getBet(const Player& player) const;
     void dealInitialHands();
-    void showAllHands(bool revealOpponents = false) const;
+    void showAllHands(bool revealOpponents, const std::vector<bool>& folded) const;
     double bettingRound(Player& player, double& pot,
-                        std::vector<bool>& foldedOpponents,
-                        double currentBet, bool isPreFlop,
-                        const std::vector<Card>& community);
+                    std::vector<bool>& foldedOpponents,
+                    double currentBet, bool isPreFlop,
+                    const std::vector<Card>& community);
 
     template <typename T>
     T getValidatedInput(T min, T max) const;

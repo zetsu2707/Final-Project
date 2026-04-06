@@ -146,11 +146,11 @@ Poker::HandRank Poker::evaluateHand(const Hand& hand) const {
     const auto& cards = hand.getCards();
     if (cards.size() < 5) return HandRank::HighCard;
 
-    // Count ranks and suits
-    std::map<int, int> rankCount;
+    // Use rank string for pair/trip/quad counting
+    std::map<std::string, int> rankCount;
     std::map<std::string, int> suitCount;
     for (const auto& c : cards) {
-        rankCount[c.value]++;
+        rankCount[c.rank]++;
         suitCount[c.suit]++;
     }
 
@@ -158,56 +158,54 @@ Poker::HandRank Poker::evaluateHand(const Hand& hand) const {
     for (const auto& [suit, count] : suitCount)
         if (count >= 5) { isFlush = true; break; }
 
-    // Build sorted unique values for straight detection
+    // Use value for straight detection (separately)
+    std::map<int, int> valueCount;
+    for (const auto& c : cards) valueCount[c.value]++;
+
     std::vector<int> vals;
-    for (const auto& [v, _] : rankCount) vals.push_back(v);
+    for (const auto& [v, _] : valueCount) vals.push_back(v);
     std::sort(vals.begin(), vals.end());
 
-    // Check straight (handle A-low: A=11 treated as 1)
     auto checkStraight = [&](const std::vector<int>& v) -> bool {
         if (v.size() < 5) return false;
         for (size_t i = v.size() - 1; i >= 4; --i)
-            if (v[i] - v[i-4] == 4 &&
-                v[i-1]-v[i-4]==3 &&
-                v[i-2]-v[i-4]==2 &&
-                v[i-3]-v[i-4]==1)
+            if (v[i]   - v[i-4] == 4 &&
+                v[i-1] - v[i-4] == 3 &&
+                v[i-2] - v[i-4] == 2 &&
+                v[i-3] - v[i-4] == 1)
                 return true;
         return false;
     };
 
     bool isStraight = checkStraight(vals);
-    // A-low straight (A,2,3,4,5)
-    if (!isStraight) {
-        bool hasAce = rankCount.count(11);
-        if (hasAce) {
-            std::vector<int> lowVals;
-            for (int v : vals) lowVals.push_back(v == 11 ? 1 : v);
-            std::sort(lowVals.begin(), lowVals.end());
-            isStraight = checkStraight(lowVals);
-        }
+    if (!isStraight && valueCount.count(11)) {
+        std::vector<int> lowVals;
+        for (int v : vals) lowVals.push_back(v == 11 ? 1 : v);
+        std::sort(lowVals.begin(), lowVals.end());
+        isStraight = checkStraight(lowVals);
     }
 
-    // Count pairs/trips/quads
+    // Count pairs/trips/quads using rank strings
     int pairs = 0, threes = 0, fours = 0;
-    for (const auto& [v, c] : rankCount) {
+    for (const auto& [r, c] : rankCount) {
         if (c == 2) pairs++;
         else if (c == 3) threes++;
         else if (c == 4) fours++;
     }
 
     if (isStraight && isFlush) {
-        // Check royal (10,J,Q,K,A)
-        if (rankCount.count(10) && rankCount.count(11))
+        // Royal: must have A and 10 by value
+        if (valueCount.count(11) && valueCount.count(10))
             return HandRank::RoyalFlush;
         return HandRank::StraightFlush;
     }
-    if (fours)                      return HandRank::FourOfAKind;
-    if (threes && pairs)            return HandRank::FullHouse;
-    if (isFlush)                    return HandRank::Flush;
-    if (isStraight)                 return HandRank::Straight;
-    if (threes)                     return HandRank::ThreeOfAKind;
-    if (pairs >= 2)                 return HandRank::TwoPair;
-    if (pairs == 1)                 return HandRank::OnePair;
+    if (fours)             return HandRank::FourOfAKind;
+    if (threes && pairs)   return HandRank::FullHouse;
+    if (isFlush)           return HandRank::Flush;
+    if (isStraight)        return HandRank::Straight;
+    if (threes)            return HandRank::ThreeOfAKind;
+    if (pairs >= 2)        return HandRank::TwoPair;
+    if (pairs == 1)        return HandRank::OnePair;
     return HandRank::HighCard;
 }
 
@@ -252,13 +250,14 @@ void Poker::showBanner() const {
     std::cout << "╚══════════════════════════════════╝\n\n";
 }
 
-void Poker::showAllHands(bool revealOpponents) const {
+void Poker::showAllHands(bool revealOpponents, const std::vector<bool>& folded) const {
     std::cout << "\n-- Player Hand --\n";
     m_player.showHand();
 
-    for (const auto& opp : m_opponents) {
-        std::cout << "\n-- " << opp.getName() << "'s Hand --\n";
-        opp.showHand(!revealOpponents);
+    for (size_t i = 0; i < m_opponents.size(); ++i) {
+        if (folded[i]) continue;  // skip folded opponents
+        std::cout << "\n-- " << m_opponents[i].getName() << "'s Hand --\n";
+        m_opponents[i].showHand(!revealOpponents);
     }
     std::cout << "\n";
 }
@@ -324,21 +323,18 @@ double Poker::bettingRound(Player& player, double& pot,
         int bluff = bluffDist(rng);
         bool isBluffing = (bluff == 1);
 
-        // Pre-flop: never fold, always at least call
-        bool isPreFlop = (m_opponents[i].getHand().size() == 2);
-
         if (isBluffing) {
-            double raise = std::max(currentBet + 10.0, 10.0);;
+            double raise = std::max(currentBet + 10.0, 10.0);
             std::cout << m_opponents[i].getName() << " raises to $"
                     << std::fixed << std::setprecision(2) << raise << ".\n";
-            pot += raise;
+            pot += isPreFlop ? (raise - currentBet) : raise;  // pre-flop only add the extra
             currentBet = raise;
         } else if (isPreFlop || aiRank >= HandRank::OnePair) {
             if (aiRank >= HandRank::ThreeOfAKind) {
-                double raise = std::max(currentBet + 20.0, 20.0);;
+                double raise = std::max(currentBet + 20.0, 20.0);
                 std::cout << m_opponents[i].getName() << " raises to $"
                         << raise << ".\n";
-                pot += raise;
+                pot += isPreFlop ? (raise - currentBet) : raise;
                 currentBet = raise;
             } else {
                 if (currentBet == 0.0)
@@ -391,12 +387,12 @@ double Poker::bettingRound(Player& player, double& pot,
             }
             break;
 
-        case 3: { // Raise
-            std::cout << "Enter raise amount (added on top of current bet $" << currentBet << "): $";
+        case 3: {
             double raiseExtra = getValidatedInput<double>(1.0, player.getBalance() - currentBet);
             double totalRaise = currentBet + raiseExtra;
-            if (player.placeBet(totalRaise)) {
-                pot += totalRaise;
+            double charge = isPreFlop ? raiseExtra : totalRaise;
+            if (player.placeBet(charge)) {
+                pot += charge;
                 playerContribution = totalRaise;
                 std::cout << "You raise to $" << totalRaise << ".\n";
             }
@@ -460,7 +456,7 @@ void Poker::play(Player& player) {
         std::cout << "\nAnte up! Enter your initial bet:\n";
         double ante = getBet(player);
         player.placeBet(ante);
-        double pot = ante;
+        double pot = ante * (1 + m_opponents.size()); // all players pay the ante
 
         // -- Deal hole cards --
         m_deck.reset();
@@ -476,7 +472,7 @@ void Poker::play(Player& player) {
         // Pre-flop betting
         std::cout << "\n-- Pre-Flop Betting --\n";
         std::vector<bool> folded(m_opponents.size(), false);
-        double result = bettingRound(player, pot, folded, ante, true, community);
+        double result = bettingRound(player, pot, folded, 0.0, true, community);
         if (result < 0.0) {
             std::cout << "You folded. Pot goes to opponents.\n\n";
             continue;
@@ -540,7 +536,7 @@ void Poker::play(Player& player) {
 
         // -- Showdown --
         std::cout << "\n== SHOWDOWN ==\n";
-        showAllHands(true);
+        showAllHands(true, folded);
 
         Hand playerFull = buildFull(m_player.getHand());
         HandRank playerRank = evaluateHand(playerFull);
