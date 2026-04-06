@@ -3,13 +3,16 @@
 // Date Created: 3/29/2026
 // Last Edited: 3/29/2026
 
-#include "Poker.h"
 #include <algorithm>
 #include <iostream>
 #include <iomanip>
 #include <limits>
 #include <map>
-#include <sstream>
+#include <random>
+#include <string>
+#include <vector>
+#include "Poker.h"
+
 
 // -----------------------------------------
 // Hand
@@ -244,9 +247,9 @@ bool Poker::winsAgainst(const Hand& a, const Hand& b) const {
 
 void Poker::showBanner() const {
     std::cout << "\n";
-    std::cout << "____________________________________\n";
+    std::cout << "╔══════════════════════════════════╗\n";
     std::cout << "|     TEXAS HOLD'EM POKER          |\n";
-    std::cout << "____________________________________\n\n";
+    std::cout << "╚══════════════════════════════════╝\n\n";
 }
 
 void Poker::showAllHands(bool revealOpponents) const {
@@ -325,21 +328,25 @@ double Poker::bettingRound(Player& player, double& pot,
         bool isPreFlop = (m_opponents[i].getHand().size() == 2);
 
         if (isBluffing) {
-            double raise = currentBet + 10.0;
+            double raise = std::max(currentBet + 10.0, 10.0);;
             std::cout << m_opponents[i].getName() << " raises to $"
                     << std::fixed << std::setprecision(2) << raise << ".\n";
             pot += raise;
             currentBet = raise;
         } else if (isPreFlop || aiRank >= HandRank::OnePair) {
             if (aiRank >= HandRank::ThreeOfAKind) {
-                double raise = currentBet + 20.0;
+                double raise = std::max(currentBet + 20.0, 20.0);;
                 std::cout << m_opponents[i].getName() << " raises to $"
                         << raise << ".\n";
                 pot += raise;
                 currentBet = raise;
             } else {
-                std::cout << m_opponents[i].getName() << " calls.\n";
-                pot += currentBet;
+                if (currentBet == 0.0)
+                    std::cout << m_opponents[i].getName() << " checks.\n";
+                else {
+                    std::cout << m_opponents[i].getName() << " calls.\n";
+                    pot += currentBet;
+                }
             }
         } else {
             std::cout << m_opponents[i].getName() << " folds.\n";
@@ -351,8 +358,11 @@ double Poker::bettingRound(Player& player, double& pot,
     std::cout << "\nPot: $" << std::fixed << std::setprecision(2) << pot << "\n";
     std::cout << "Current bet to call: $" << currentBet << "\n";
     std::cout << "Your balance: $" << player.getBalance() << "\n\n";
-    std::cout << "1. Fold\n2. Call ($" << currentBet << ")\n"
-              << "3. Raise\n4. All-in\n";
+    if (currentBet == 0.0) {
+        std::cout << "1. Fold\n2. Check\n3. Raise\n4. All-in\n";
+    } else {
+        std::cout << "1. Fold\n2. Call ($" << currentBet << ")\n3. Raise\n4. All-in\n";
+    }
     std::cout << "Choice: ";
 
     int choice = getValidatedInput<int>(1, 4);
@@ -364,25 +374,31 @@ double Poker::bettingRound(Player& player, double& pot,
             return -1.0; // sentinel for fold
 
         case 2: // Call
-            if (player.placeBet(currentBet)) {
-                pot += currentBet;
-                playerContribution = currentBet;
-                std::cout << "You call $" << currentBet << ".\n";
+            if (currentBet == 0.0) {
+                std::cout << "You check.\n";
+                // nothing added to pot
             } else {
-                std::cout << "Not enough funds to call. Going all-in.\n";
-                pot += player.getBalance();
-                playerContribution = player.getBalance();
-                player.placeBet(player.getBalance());
+                if (player.placeBet(currentBet)) {
+                    pot += currentBet;
+                    playerContribution = currentBet;
+                    std::cout << "You call $" << currentBet << ".\n";
+                } else {
+                    std::cout << "Not enough funds. Going all-in.\n";
+                    pot += player.getBalance();
+                    playerContribution = player.getBalance();
+                    player.placeBet(player.getBalance());
+                }
             }
             break;
 
         case 3: { // Raise
-            std::cout << "Raise to: $";
-            double raiseAmount = getValidatedInput<double>(currentBet + 1, player.getBalance());
-            if (player.placeBet(raiseAmount)) {
-                pot += raiseAmount;
-                playerContribution = raiseAmount;
-                std::cout << "You raise to $" << raiseAmount << ".\n";
+            std::cout << "Enter raise amount (added on top of current bet $" << currentBet << "): $";
+            double raiseExtra = getValidatedInput<double>(1.0, player.getBalance() - currentBet);
+            double totalRaise = currentBet + raiseExtra;
+            if (player.placeBet(totalRaise)) {
+                pot += totalRaise;
+                playerContribution = totalRaise;
+                std::cout << "You raise to $" << totalRaise << ".\n";
             }
             break;
         }
