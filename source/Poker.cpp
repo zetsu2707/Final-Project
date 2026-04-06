@@ -11,9 +11,9 @@
 #include <map>
 #include <sstream>
 
-// ─────────────────────────────────────────
+// -----------------------------------------
 // Hand
-// ─────────────────────────────────────────
+// -----------------------------------------
 
 void Poker::Hand::addCard(const Card& card) {
     m_cards.push_back(card);
@@ -47,9 +47,9 @@ int Poker::Hand::size() const {
     return static_cast<int>(m_cards.size());
 }
 
-// ─────────────────────────────────────────
+// -----------------------------------------
 // Deck
-// ─────────────────────────────────────────
+// -----------------------------------------
 
 Poker::Deck::Deck() {
     std::random_device rd;
@@ -84,9 +84,9 @@ Poker::Card Poker::Deck::draw() {
     return c;
 }
 
-// ─────────────────────────────────────────
+// -----------------------------------------
 // Participant
-// ─────────────────────────────────────────
+// -----------------------------------------
 
 void Poker::Participant::hit(Deck& deck) {
     m_hand.addCard(deck.draw());
@@ -108,9 +108,9 @@ void Poker::Participant::clearHand() {
     m_hand.clear();
 }
 
-// ─────────────────────────────────────────
+// -----------------------------------------
 // PokerPlayer
-// ─────────────────────────────────────────
+// -----------------------------------------
 
 void Poker::PokerPlayer::takeTurn(Deck& deck) {
     m_hand.addCard(deck.draw());
@@ -120,9 +120,9 @@ void Poker::PokerPlayer::discardAndDraw(Deck& deck) {
     // Not used in Hold'em but kept for future modes
 }
 
-// ─────────────────────────────────────────
+// -----------------------------------------
 // AIOpponent
-// ─────────────────────────────────────────
+// -----------------------------------------
 
 Poker::AIOpponent::AIOpponent(std::string name)
     : m_name(std::move(name)) {}
@@ -135,9 +135,9 @@ void Poker::AIOpponent::takeTurn(Deck& deck) {
     m_hand.addCard(deck.draw());
 }
 
-// ─────────────────────────────────────────
+// -----------------------------------------
 // Hand Evaluation
-// ─────────────────────────────────────────
+// -----------------------------------------
 
 Poker::HandRank Poker::evaluateHand(const Hand& hand) const {
     const auto& cards = hand.getCards();
@@ -238,23 +238,23 @@ bool Poker::winsAgainst(const Hand& a, const Hand& b) const {
     return highCard(a) >= highCard(b);
 }
 
-// ─────────────────────────────────────────
+// -----------------------------------------
 // Display Helpers
-// ─────────────────────────────────────────
+// -----------------------------------------
 
 void Poker::showBanner() const {
     std::cout << "\n";
-    std::cout << "╔══════════════════════════════════╗\n";
-    std::cout << "║     TEXAS HOLD'EM POKER          ║\n";
-    std::cout << "╚══════════════════════════════════╝\n\n";
+    std::cout << "____________________________________\n";
+    std::cout << "|     TEXAS HOLD'EM POKER          |\n";
+    std::cout << "____________________________________\n\n";
 }
 
 void Poker::showAllHands(bool revealOpponents) const {
-    std::cout << "\n── Player Hand ──\n";
+    std::cout << "\n-- Player Hand --\n";
     m_player.showHand();
 
     for (const auto& opp : m_opponents) {
-        std::cout << "\n── " << opp.getName() << "'s Hand ──\n";
+        std::cout << "\n-- " << opp.getName() << "'s Hand --\n";
         opp.showHand(!revealOpponents);
     }
     std::cout << "\n";
@@ -297,15 +297,16 @@ T Poker::getValidatedInput(T min, T max) const {
     }
 }
 
-// ─────────────────────────────────────────
+// -----------------------------------------
 // Betting Round
-// ─────────────────────────────────────────
+// -----------------------------------------
 
 // Returns the total amount added to the pot by the player this round.
 // foldedOpponents tracks which opponents have folded.
 double Poker::bettingRound(Player& player, double& pot,
                             std::vector<bool>& foldedOpponents,
-                            double currentBet) {
+                            double currentBet, bool isPreFlop,
+                            const std::vector<Card>& community) {
     // AI actions first
     std::mt19937 rng(std::random_device{}());
     std::uniform_int_distribution<int> bluffDist(1, 10);
@@ -313,25 +314,27 @@ double Poker::bettingRound(Player& player, double& pot,
     for (size_t i = 0; i < m_opponents.size(); ++i) {
         if (foldedOpponents[i]) continue;
 
-        HandRank aiRank = evaluateHand(m_opponents[i].getHand());
-        int bluff = bluffDist(rng);
+        Hand full = m_opponents[i].getHand();
+        for (const auto& c : community) full.addCard(c);
+        HandRank aiRank = evaluateHand(full);
 
-        // Bluffing: occasionally raise with weak hand or fold with strong one
-        bool isBluffing = (bluff == 1); // 10% bluff chance
+        int bluff = bluffDist(rng);
+        bool isBluffing = (bluff == 1);
+
+        // Pre-flop: never fold, always at least call
+        bool isPreFlop = (m_opponents[i].getHand().size() == 2);
 
         if (isBluffing) {
-            // Bluff raise regardless of hand
             double raise = currentBet + 10.0;
             std::cout << m_opponents[i].getName() << " raises to $"
-                      << std::fixed << std::setprecision(2) << raise << ".\n";
+                    << std::fixed << std::setprecision(2) << raise << ".\n";
             pot += raise;
             currentBet = raise;
-        } else if (aiRank >= HandRank::OnePair) {
-            // Call or raise based on hand strength
+        } else if (isPreFlop || aiRank >= HandRank::OnePair) {
             if (aiRank >= HandRank::ThreeOfAKind) {
                 double raise = currentBet + 20.0;
                 std::cout << m_opponents[i].getName() << " raises to $"
-                          << raise << ".\n";
+                        << raise << ".\n";
                 pot += raise;
                 currentBet = raise;
             } else {
@@ -339,7 +342,6 @@ double Poker::bettingRound(Player& player, double& pot,
                 pot += currentBet;
             }
         } else {
-            // Weak hand — fold unless bluffing
             std::cout << m_opponents[i].getName() << " folds.\n";
             foldedOpponents[i] = true;
         }
@@ -396,9 +398,9 @@ double Poker::bettingRound(Player& player, double& pot,
     return playerContribution;
 }
 
-// ─────────────────────────────────────────
+// -----------------------------------------
 // Deal Initial Hands
-// ─────────────────────────────────────────
+// -----------------------------------------
 
 void Poker::dealInitialHands() {
     m_player.clearHand();
@@ -411,18 +413,18 @@ void Poker::dealInitialHands() {
     }
 }
 
-// ─────────────────────────────────────────
+// -----------------------------------------
 // Constructor
-// ─────────────────────────────────────────
+// -----------------------------------------
 
 Poker::Poker()
     : m_opponents({ AIOpponent("Dealer Dan"),
                     AIOpponent("Reckless Roy"),
                     AIOpponent("Careful Carl") }) {}
 
-// ─────────────────────────────────────────
+// -----------------------------------------
 // play()
-// ─────────────────────────────────────────
+// -----------------------------------------
 
 void Poker::play(Player& player) {
     showBanner();
@@ -438,27 +440,27 @@ void Poker::play(Player& player) {
             break;
         }
 
-        // ── Ante ──
+        // -- Ante --
         std::cout << "\nAnte up! Enter your initial bet:\n";
         double ante = getBet(player);
         player.placeBet(ante);
         double pot = ante;
 
-        // ── Deal hole cards ──
+        // -- Deal hole cards --
         m_deck.reset();
         m_deck.shuffle();
         dealInitialHands();
 
-        std::cout << "\n── Your Hole Cards ──\n";
+        std::cout << "\n-- Your Hole Cards --\n";
         m_player.showHand();
 
-        // ── Community cards ──
+        // -- Community cards --
         std::vector<Card> community;
 
         // Pre-flop betting
-        std::cout << "\n── Pre-Flop Betting ──\n";
+        std::cout << "\n-- Pre-Flop Betting --\n";
         std::vector<bool> folded(m_opponents.size(), false);
-        double result = bettingRound(player, pot, folded, ante);
+        double result = bettingRound(player, pot, folded, ante, true, community);
         if (result < 0.0) {
             std::cout << "You folded. Pot goes to opponents.\n\n";
             continue;
@@ -466,7 +468,7 @@ void Poker::play(Player& player) {
 
         // Flop (3 cards)
         for (int i = 0; i < 3; ++i) community.push_back(m_deck.draw());
-        std::cout << "\n── The Flop ──\n";
+        std::cout << "\n-- The Flop --\n";
         for (const auto& c : community)
             std::cout << "[" << c.rank << c.suit << "] ";
         std::cout << "\n";
@@ -483,8 +485,8 @@ void Poker::play(Player& player) {
         };
 
         // Post-flop betting
-        std::cout << "\n── Post-Flop Betting ──\n";
-        result = bettingRound(player, pot, folded, 0.0);
+        std::cout << "\n-- Post-Flop Betting --\n";
+        result = bettingRound(player, pot, folded, 0.0, false, community);
         if (result < 0.0) {
             std::cout << "You folded. Pot goes to opponents.\n\n";
             continue;
@@ -492,14 +494,14 @@ void Poker::play(Player& player) {
 
         // Turn (1 card)
         community.push_back(m_deck.draw());
-        std::cout << "\n── The Turn ──\n";
+        std::cout << "\n-- The Turn --\n";
         for (const auto& c : community)
             std::cout << "[" << c.rank << c.suit << "] ";
         std::cout << "\n";
 
         // Turn betting
-        std::cout << "\n── Turn Betting ──\n";
-        result = bettingRound(player, pot, folded, 0.0);
+        std::cout << "\n-- Turn Betting --\n";
+        result = bettingRound(player, pot, folded, 0.0, false, community);
         if (result < 0.0) {
             std::cout << "You folded. Pot goes to opponents.\n\n";
             continue;
@@ -507,21 +509,21 @@ void Poker::play(Player& player) {
 
         // River (1 card)
         community.push_back(m_deck.draw());
-        std::cout << "\n── The River ──\n";
+        std::cout << "\n-- The River --\n";
         for (const auto& c : community)
             std::cout << "[" << c.rank << c.suit << "] ";
         std::cout << "\n";
 
         // River betting
-        std::cout << "\n── River Betting ──\n";
-        result = bettingRound(player, pot, folded, 0.0);
+        std::cout << "\n-- River Betting --\n";
+        result = bettingRound(player, pot, folded, 0.0, false, community);
         if (result < 0.0) {
             std::cout << "You folded. Pot goes to opponents.\n\n";
             continue;
         }
 
-        // ── Showdown ──
-        std::cout << "\n══ SHOWDOWN ══\n";
+        // -- Showdown --
+        std::cout << "\n== SHOWDOWN ==\n";
         showAllHands(true);
 
         Hand playerFull = buildFull(m_player.getHand());

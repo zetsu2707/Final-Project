@@ -105,9 +105,10 @@ private:
     double getBet(const Player& player) const;
     void dealInitialHands();
     void showAllHands(bool revealOpponents = false) const;
-    double bettingRound(Player& player, double& pot,
-                    std::vector<bool>& foldedOpponents,
-                    double currentBet);
+double Poker::bettingRound(Player& player, double& pot,
+                            std::vector<bool>& foldedOpponents,
+                            double currentBet, bool isPreFlop,
+                            const std::vector<Card>& community) {
 
     template <typename T>
     T getValidatedInput(T min, T max) const;
