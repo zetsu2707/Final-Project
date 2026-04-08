@@ -1,6 +1,11 @@
+// Description: Implementation file for the MainUI start menu/controller class.
+// Related Files: MainUI.h, Player.h, CasinoGameUI.h
+// Date Created: 4/7/2026
+// Last Edited: 4/7/2026
+
 #include "UIheaders/MainUI.h"
 #include "Player.h"
-#include "CasinoGame.h"
+#include "UIheaders/CasinoGameUI.h"
 
 #include <optional>
 #include <sstream>
@@ -377,7 +382,7 @@ void MainUI::clearFormState()
     m_filenameInput.setActive(false);
 }
 
-void MainUI::startNewGame()
+void MainUI::startNewGame(sf::RenderWindow& window)
 {
     if (m_nameInput.value.empty())
     {
@@ -385,8 +390,7 @@ void MainUI::startNewGame()
         return;
     }
 
-    const double startingBalance = 200.0;
-    Player player(m_nameInput.value, startingBalance);
+    Player player(m_nameInput.value, 200.0);
 
     {
         std::ostringstream stream;
@@ -395,14 +399,14 @@ void MainUI::startNewGame()
         m_status.setString(stream.str());
     }
 
-    CasinoGame casinoMenu;
-    casinoMenu.run(player);
+    CasinoGameUI casinoMenu(player);
+    casinoMenu.run(window);
 
     m_currentScreen = Screen::MainMenu;
     clearFormState();
 }
 
-void MainUI::startLoadGame()
+void MainUI::startLoadGame(sf::RenderWindow& window)
 {
     if (m_filenameInput.value.empty())
     {
@@ -421,8 +425,8 @@ void MainUI::startLoadGame()
             m_status.setString(stream.str());
         }
 
-        CasinoGame casinoMenu;
-        casinoMenu.run(player);
+        CasinoGameUI casinoMenu(player);
+        casinoMenu.run(window);
 
         m_currentScreen = Screen::MainMenu;
         clearFormState();
@@ -507,7 +511,7 @@ void MainUI::handleMouseClick(const sf::Event& event, sf::RenderWindow& window)
 
         if (m_createPlayerButton.isClicked(event, window))
         {
-            startNewGame();
+            startNewGame(window);
             return;
         }
 
@@ -540,7 +544,7 @@ void MainUI::handleMouseClick(const sf::Event& event, sf::RenderWindow& window)
 
         if (m_loadSaveButton.isClicked(event, window))
         {
-            startLoadGame();
+            startLoadGame(window);
             return;
         }
 

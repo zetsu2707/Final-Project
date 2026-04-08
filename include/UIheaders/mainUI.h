@@ -1,4 +1,9 @@
-#pragma once
+// Header file for MainUI start menu/controller class.
+// Related Files: MainUI.cpp, Player.h, CasinoGameUI.h
+// Date Created: 4/7/2026
+// Last Edited: 4/7/2026
+
+#pragma once    
 
 #include <SFML/Graphics.hpp>
 #include <string>
@@ -74,8 +79,8 @@ private:
     void handleBackspace();
     void clearFormState();
 
-    void startNewGame();
-    void startLoadGame();
+    void startNewGame(sf::RenderWindow& window);
+    void startLoadGame(sf::RenderWindow& window);
 
     sf::Font m_font;
 

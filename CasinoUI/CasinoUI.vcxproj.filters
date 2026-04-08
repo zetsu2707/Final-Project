@@ -45,6 +45,9 @@
     <ClCompile Include="..\source\UIsource\mainUI.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\source\UIsource\casinogameUI.CPP">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\Blackjack.h">
@@ -69,6 +72,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\UIheaders\mainUI.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\UIheaders\casinogameUI.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
