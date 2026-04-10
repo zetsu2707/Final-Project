@@ -16,7 +16,9 @@ Blackjack::Blackjack() {}
 void Blackjack::play(Player& player) {
     showBanner();
 
-    while (true) {
+  bool playing = true;
+    while (playing) {
+        
         double bet = getBet(player);
 
         if (!player.placeBet(bet)) {
