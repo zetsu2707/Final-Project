@@ -1,17 +1,19 @@
 // Description: Implementation file for the CasinoGameUI game selection/controller class.
 // Related Files: CasinoGameUI.h, Player.h, Blackjack.h, HorseRace.h, Roulette.h, Poker.h
 // Date Created: 4/7/2026
-// Last Edited: 4/7/2026
+// Last Edited: 4/10/2026
 
 #include "UIheaders/CasinoGameUI.h"
 
 #include "Blackjack.h"
 #include "HorseRace.h"
+#include "UIHeaders/HorseRaceUI.h"
 #include "Roulette.h"
 #include "Poker.h"
 
 #include <optional>
 #include <sstream>
+#include <memory>
 
 CasinoGameUI::Button::Button(const sf::Font& font,
     const std::string& label,
@@ -336,15 +338,25 @@ void CasinoGameUI::saveGame()
         m_status.setString("Failed to save game.");
     }
 }
+enum class Screen
+{
+    Menu,
+    HorseRace
+};
+
+Screen m_currentScreen = Screen::Menu;
+std::unique_ptr<HorseRaceUI> m_horseRaceUI;
 
 void CasinoGameUI::handleMouseClick(const sf::Event& event, sf::RenderWindow& window)
 {
     if (m_horseRaceCard.isClicked(event, window))
     {
-        HorseRacing horseRace;
-        horseRace.play(m_player);
-        refreshPlayerStats();
-        m_status.setString("Finished Horse Race.");
+        if (!m_horseRaceUI)
+            m_horseRaceUI = std::make_unique<HorseRaceUI>(window, m_font);
+
+        m_horseRaceUI->open(m_player);
+        m_currentScreen = Screen::HorseRace;
+        m_status.setString("Horse Race loaded.");
         return;
     }
 
@@ -442,32 +454,69 @@ void CasinoGameUI::draw(sf::RenderWindow& window)
 
 void CasinoGameUI::run(sf::RenderWindow& window)
 {
+    if (!m_horseRaceUI)
+        m_horseRaceUI = std::make_unique<HorseRaceUI>(window, m_font);
+
+    sf::Clock frameClock;
+
     while (window.isOpen() && m_running)
     {
+        const float deltaTime = frameClock.restart().asSeconds();
+
         while (const std::optional event = window.pollEvent())
         {
             if (event->is<sf::Event::Closed>())
+            {
                 window.close();
+                continue;
+            }
 
-            if (event->is<sf::Event::TextEntered>())
-                handleTextEntered(*event);
+            if (m_currentScreen == Screen::HorseRace)
+            {
+                m_horseRaceUI->handleEvent(*event);
+            }
+            else
+            {
+                if (event->is<sf::Event::TextEntered>())
+                    handleTextEntered(*event);
 
-            handleMouseClick(*event, window);
+                handleMouseClick(*event, window);
+            }
         }
 
-        m_horseRaceCard.update(window);
-        m_blackjackCard.update(window);
-        m_rouletteCard.update(window);
-        m_pokerCard.update(window);
-		m_slotsCard.update(window);
-        m_saveGameButton.update(window);
-        m_returnButton.update(window);
+        if (m_currentScreen == Screen::HorseRace)
+        {
+            m_horseRaceUI->update(deltaTime);
 
-        if (m_saveModeActive)
-            m_confirmSaveButton.update(window);
+            if (m_horseRaceUI->wantsToLeave())
+            {
+                m_horseRaceUI->clearLeaveRequest();
+                m_currentScreen = Screen::Menu;
+                refreshPlayerStats();
+                m_status.setString("Returned from Horse Race.");
+            }
+        }
+        else
+        {
+            m_horseRaceCard.update(window);
+            m_blackjackCard.update(window);
+            m_rouletteCard.update(window);
+            m_pokerCard.update(window);
+            m_slotsCard.update(window);
+            m_saveGameButton.update(window);
+            m_returnButton.update(window);
+
+            if (m_saveModeActive)
+                m_confirmSaveButton.update(window);
+        }
 
         window.clear();
-        draw(window);
+
+        if (m_currentScreen == Screen::HorseRace)
+            m_horseRaceUI->draw();
+        else
+            draw(window);
+
         window.display();
     }
 }
