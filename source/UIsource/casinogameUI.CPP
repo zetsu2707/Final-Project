@@ -1,7 +1,7 @@
 // Description: Implementation file for the CasinoGameUI game selection/controller class.
-// Related Files: CasinoGameUI.h, Player.h, Blackjack.h, HorseRace.h, Roulette.h, Poker.h
+// Related Files: CasinoGameUI.h, Player.h, Blackjack.h, HorseRace.h, Roulette.h, Poker.h, Audio.h
 // Date Created: 4/7/2026
-// Last Edited: 4/10/2026
+// Last Edited: 4/11/2026
 
 #include "UIheaders/CasinoGameUI.h"
 
@@ -10,6 +10,7 @@
 #include "UIHeaders/HorseRaceUI.h"
 #include "Roulette.h"
 #include "Poker.h"
+#include "Audio.h"
 
 #include <optional>
 #include <sstream>
@@ -190,8 +191,9 @@ void CasinoGameUI::ImageCard::draw(sf::RenderWindow& window) const
     window.draw(hoverOutline);
 }
 
-CasinoGameUI::CasinoGameUI(Player& player)
+CasinoGameUI::CasinoGameUI(Player& player, AudioManager& audio)
     : m_player(player),
+    m_audio(audio),
     m_running(true),
     m_saveModeActive(false),
     m_saveFieldActive(false),
@@ -210,7 +212,7 @@ CasinoGameUI::CasinoGameUI(Player& player)
     m_blackjackCard("assets/blackjack_card.png", { 1330.f, 270.f }, { 500.f, 220.f }),
     m_rouletteCard("assets/roulette_card.png", { 390.f, 540.f }, { 500.f, 220.f }),
     m_pokerCard("assets/poker_card.png", { 1030.f, 540.f }, { 500.f, 220.f }),
-	m_slotsCard("assets/slots_card.png", { 710.f, 270.f }, { 500.f, 220.f }),
+    m_slotsCard("assets/slots_card.png", { 710.f, 270.f }, { 500.f, 220.f }),
     m_saveGameButton(m_font, "Save Game", { 540.f, 860.f }, { 320.f, 80.f }),
     m_returnButton(m_font, "Return to Main Menu", { 1230.f, 860.f }, { 420.f, 80.f }),
     m_confirmSaveButton(m_font, "Confirm Save", { 1250.f, 960.f }, { 280.f, 70.f }),
@@ -338,6 +340,7 @@ void CasinoGameUI::saveGame()
         m_status.setString("Failed to save game.");
     }
 }
+
 enum class Screen
 {
     Menu,
@@ -351,8 +354,10 @@ void CasinoGameUI::handleMouseClick(const sf::Event& event, sf::RenderWindow& wi
 {
     if (m_horseRaceCard.isClicked(event, window))
     {
+        m_audio.playSound("button");
+
         if (!m_horseRaceUI)
-            m_horseRaceUI = std::make_unique<HorseRaceUI>(window, m_font);
+            m_horseRaceUI = std::make_unique<HorseRaceUI>(window, m_font, m_audio);
 
         m_horseRaceUI->open(m_player);
         m_currentScreen = Screen::HorseRace;
@@ -362,6 +367,7 @@ void CasinoGameUI::handleMouseClick(const sf::Event& event, sf::RenderWindow& wi
 
     if (m_blackjackCard.isClicked(event, window))
     {
+        m_audio.playSound("button");
         Blackjack blackjack;
         blackjack.play(m_player);
         refreshPlayerStats();
@@ -371,6 +377,7 @@ void CasinoGameUI::handleMouseClick(const sf::Event& event, sf::RenderWindow& wi
 
     if (m_rouletteCard.isClicked(event, window))
     {
+        m_audio.playSound("button");
         Roulette roulette;
         roulette.play(m_player);
         refreshPlayerStats();
@@ -380,6 +387,7 @@ void CasinoGameUI::handleMouseClick(const sf::Event& event, sf::RenderWindow& wi
 
     if (m_pokerCard.isClicked(event, window))
     {
+        m_audio.playSound("button");
         Poker poker;
         poker.play(m_player);
         refreshPlayerStats();
@@ -389,17 +397,22 @@ void CasinoGameUI::handleMouseClick(const sf::Event& event, sf::RenderWindow& wi
 
     if (m_saveGameButton.isClicked(event, window))
     {
+        m_audio.playSound("button");
         m_saveModeActive = true;
         m_status.setString("Enter a save filename.");
         return;
     }
+
     if (m_slotsCard.isClicked(event, window))
     {
+        m_audio.playSound("button");
         m_status.setString("Slots is work in progress.");
         return;
     }
+
     if (m_returnButton.isClicked(event, window))
     {
+        m_audio.playSound("button");
         m_running = false;
         return;
     }
@@ -420,6 +433,7 @@ void CasinoGameUI::handleMouseClick(const sf::Event& event, sf::RenderWindow& wi
 
     if (m_confirmSaveButton.isClicked(event, window))
     {
+        m_audio.playSound("button");
         saveGame();
     }
 }
@@ -455,12 +469,13 @@ void CasinoGameUI::draw(sf::RenderWindow& window)
 void CasinoGameUI::run(sf::RenderWindow& window)
 {
     if (!m_horseRaceUI)
-        m_horseRaceUI = std::make_unique<HorseRaceUI>(window, m_font);
+        m_horseRaceUI = std::make_unique<HorseRaceUI>(window, m_font, m_audio);
 
     sf::Clock frameClock;
 
     while (window.isOpen() && m_running)
     {
+        m_audio.update();
         const float deltaTime = frameClock.restart().asSeconds();
 
         while (const std::optional event = window.pollEvent())
@@ -492,6 +507,7 @@ void CasinoGameUI::run(sf::RenderWindow& window)
             {
                 m_horseRaceUI->clearLeaveRequest();
                 m_currentScreen = Screen::Menu;
+                m_audio.playMusic("assets/sound/background/main_track.wav", true, 15.f);
                 refreshPlayerStats();
                 m_status.setString("Returned from Horse Race.");
             }

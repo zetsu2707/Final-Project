@@ -1,7 +1,7 @@
 // Description: Implementation file for the MainUI start menu/controller class.
 // Related Files: MainUI.h, Player.h, CasinoGameUI.h
 // Date Created: 4/7/2026
-// Last Edited: 4/7/2026
+// Last Edited: 4/11/2026
 
 #include "UIheaders/MainUI.h"
 #include "Player.h"
@@ -129,8 +129,9 @@ void MainUI::InputField::draw(sf::RenderWindow& window) const
     window.draw(text);
 }
 
-MainUI::MainUI()
-    : m_font("assets/arial.ttf"),
+MainUI::MainUI(AudioManager& audio)
+    : m_audio(audio),
+    m_font("assets/arial.ttf"),
     m_backgroundTexture("assets/menu_background.jpg"),
     m_backgroundSprite(m_backgroundTexture),
     m_logoTexture("assets/menu_logo.png"),
@@ -399,7 +400,7 @@ void MainUI::startNewGame(sf::RenderWindow& window)
         m_status.setString(stream.str());
     }
 
-    CasinoGameUI casinoMenu(player);
+    CasinoGameUI casinoMenu(player, m_audio);
     casinoMenu.run(window);
 
     m_currentScreen = Screen::MainMenu;
@@ -425,7 +426,7 @@ void MainUI::startLoadGame(sf::RenderWindow& window)
             m_status.setString(stream.str());
         }
 
-        CasinoGameUI casinoMenu(player);
+        CasinoGameUI casinoMenu(player, m_audio);
         casinoMenu.run(window);
 
         m_currentScreen = Screen::MainMenu;
@@ -443,6 +444,7 @@ void MainUI::handleMouseClick(const sf::Event& event, sf::RenderWindow& window)
     {
         if (m_newGame.isClicked(event, window))
         {
+            m_audio.playSound("button");
             m_currentScreen = Screen::NewGame;
             m_status.setString("Create a new player.");
             clearFormState();
@@ -451,6 +453,7 @@ void MainUI::handleMouseClick(const sf::Event& event, sf::RenderWindow& window)
 
         if (m_loadGame.isClicked(event, window))
         {
+            m_audio.playSound("button");
             m_currentScreen = Screen::LoadGame;
             m_status.setString("Load an existing save.");
             clearFormState();
@@ -459,6 +462,7 @@ void MainUI::handleMouseClick(const sf::Event& event, sf::RenderWindow& window)
 
         if (m_statistics.isClicked(event, window))
         {
+            m_audio.playSound("button");
             m_currentScreen = Screen::Statistics;
             m_status.setString("Statistics");
             clearFormState();
@@ -467,6 +471,7 @@ void MainUI::handleMouseClick(const sf::Event& event, sf::RenderWindow& window)
 
         if (m_instructions.isClicked(event, window))
         {
+            m_audio.playSound("button");
             m_currentScreen = Screen::Instructions;
             m_status.setString("Instructions");
             clearFormState();
@@ -475,6 +480,7 @@ void MainUI::handleMouseClick(const sf::Event& event, sf::RenderWindow& window)
 
         if (m_exitButton.isClicked(event, window))
         {
+            m_audio.playSound("button");
             window.close();
             return;
         }
@@ -484,6 +490,7 @@ void MainUI::handleMouseClick(const sf::Event& event, sf::RenderWindow& window)
     {
         if (m_backButton.isClicked(event, window))
         {
+            m_audio.playSound("button");
             m_currentScreen = Screen::MainMenu;
             m_status.setString("Main Menu");
             clearFormState();
@@ -511,12 +518,14 @@ void MainUI::handleMouseClick(const sf::Event& event, sf::RenderWindow& window)
 
         if (m_createPlayerButton.isClicked(event, window))
         {
+            m_audio.playSound("button");
             startNewGame(window);
             return;
         }
 
         if (m_backButton.isClicked(event, window))
         {
+            m_audio.playSound("button");
             m_currentScreen = Screen::MainMenu;
             m_status.setString("Main Menu");
             clearFormState();
@@ -544,12 +553,14 @@ void MainUI::handleMouseClick(const sf::Event& event, sf::RenderWindow& window)
 
         if (m_loadSaveButton.isClicked(event, window))
         {
+            m_audio.playSound("button");
             startLoadGame(window);
             return;
         }
 
         if (m_backButton.isClicked(event, window))
         {
+            m_audio.playSound("button");
             m_currentScreen = Screen::MainMenu;
             m_status.setString("Main Menu");
             clearFormState();
@@ -562,6 +573,7 @@ void MainUI::run(sf::RenderWindow& window)
 {
     while (window.isOpen())
     {
+        m_audio.update();
         while (const std::optional event = window.pollEvent())
         {
             if (event->is<sf::Event::Closed>())

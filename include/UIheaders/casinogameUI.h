@@ -1,7 +1,7 @@
 // Header file for CasinoGameUI game selection/controller class.
-// Related Files: CasinoGameUI.cpp, Player.h, Blackjack.h, HorseRace.h, Roulette.h, Poker.h
+// Related Files: CasinoGameUI.cpp, Player.h, Blackjack.h, HorseRace.h, Roulette.h, Poker.h, Audio.h
 // Date Created: 4/7/2026
-// Last Edited: 4/10/2026
+// Last Edited: 4/11/2026
 
 #pragma once
 
@@ -9,11 +9,12 @@
 #include <string>
 #include "Player.h"
 
+class AudioManager;
 
 class CasinoGameUI
 {
 public:
-    explicit CasinoGameUI(Player& player);
+    CasinoGameUI(Player& player, AudioManager& audio);
     void run(sf::RenderWindow& window);
 
 private:
@@ -75,6 +76,8 @@ private:
     void clearSaveInput();
 
     Player& m_player;
+    AudioManager& m_audio;
+
     bool m_running;
     bool m_saveModeActive;
     bool m_saveFieldActive;

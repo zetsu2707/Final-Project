@@ -1,21 +1,24 @@
 // Header file for MainUI start menu/controller class.
 // Related Files: MainUI.cpp, Player.h, CasinoGameUI.h
 // Date Created: 4/7/2026
-// Last Edited: 4/7/2026
+// Last Edited: 4/11/2026
 
-#pragma once    
+#pragma once
 
 #include <SFML/Graphics.hpp>
 #include <string>
 #include <vector>
+#include "Audio.h"
 
 class MainUI
 {
 public:
-    MainUI();
+    MainUI(AudioManager& audio);
     void run(sf::RenderWindow& window);
 
 private:
+    AudioManager& m_audio;
+
     enum class Screen
     {
         MainMenu,

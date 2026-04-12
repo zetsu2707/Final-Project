@@ -1,7 +1,7 @@
-// Header file for Horserace minigame.
-// Related Files: 
+// Header file for HorseRace minigame UI class.
+// Related Files: HorseRaceUI.cpp, HorseRace.h, Player.h, Audio.h
 // Date Created: 4/10/2026
-// Last Edited: 4/10/2026
+// Last Edited: 4/11/2026
 
 #pragma once
 
@@ -14,9 +14,11 @@
 #include <optional>
 #include <string>
 
+class AudioManager;
+
 class HorseRaceUI {
 public:
-    HorseRaceUI(sf::RenderWindow& window, sf::Font& font);
+    HorseRaceUI(sf::RenderWindow& window, sf::Font& font, AudioManager& audio);
 
     void open(Player& player);
     void handleEvent(const sf::Event& event);
@@ -52,6 +54,7 @@ private:
 
     sf::RenderWindow& m_window;
     sf::Font& m_font;
+    AudioManager& m_audio;
     sf::View m_view;
 
     HorseRacing m_game;
