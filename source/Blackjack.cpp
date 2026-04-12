@@ -87,6 +87,21 @@ void Blackjack::play(Player& player) {
 
         std::cout << "Current balance: $" << std::fixed << std::setprecision(2)
                   << player.getBalance() << "\n\n";
+        std::cout << "Play again?\n";
+std::cout << "1. Yes\n";
+std::cout << "2. No (Return to Main Menu)\n";
+std::cout << "Choice: ";
+
+int again = getValidatedInput<int>(1, 2);
+
+switch (again) {
+case 1:
+    break;
+
+case 2:
+    std::cout << "Returning to main menu...\n";
+    return;
+}
     }
 }
 
