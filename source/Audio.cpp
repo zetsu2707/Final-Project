@@ -1,7 +1,7 @@
 // Description: Implementation file for the audio manager class.
 // Related Files: Audio.h, MainUI.h, MainUI.cpp
 // Date Created: 4/11/2026
-// Last Edited: 4/11/2026
+// Last Edited: 4/12/2026
 
 #include "Audio.h"
 
@@ -77,13 +77,14 @@ void AudioManager::resumeMusic()
 
 void AudioManager::playSound(const std::string& id, float volume)
 {
-    auto it = m_soundBuffers.find(id);
+    const auto it = m_soundBuffers.find(id);
     if (it == m_soundBuffers.end())
         return;
 
     m_activeSounds.emplace_back(it->second);
-    m_activeSounds.back().setVolume(volume * (m_soundVolume / 100.f));
-    m_activeSounds.back().play();
+    sf::Sound& sound = m_activeSounds.back();
+    sound.setVolume(volume * (m_soundVolume / 100.f));
+    sound.play();
 }
 
 void AudioManager::setMusicVolume(float volume)
@@ -118,13 +119,9 @@ void AudioManager::update()
 
 void AudioManager::cleanupStoppedSounds()
 {
-    m_activeSounds.erase(
-        std::remove_if(
-            m_activeSounds.begin(),
-            m_activeSounds.end(),
-            [](const sf::Sound& sound)
-            {
-                return sound.getStatus() == sf::SoundSource::Status::Stopped;
-            }),
-        m_activeSounds.end());
+    m_activeSounds.remove_if(
+        [](const sf::Sound& sound)
+        {
+            return sound.getStatus() == sf::SoundSource::Status::Stopped;
+        });
 }

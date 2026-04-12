@@ -1,14 +1,14 @@
-// Description: Implementation file for the audio manager class.
-// Related Files: Audio.h, MainUI.h, MainUI.cpp
+// Description: Header file for the audio manager class.
+// Related Files: Audio.cpp, MainUI.h, MainUI.cpp
 // Date Created: 4/11/2026
-// Last Edited: 4/11/2026
+// Last Edited: 4/12/2026
 
 #pragma once
 
 #include <SFML/Audio.hpp>
+#include <list>
 #include <string>
 #include <unordered_map>
-#include <vector>
 
 class AudioManager
 {
@@ -35,7 +35,7 @@ public:
 private:
     sf::Music m_music;
     std::unordered_map<std::string, sf::SoundBuffer> m_soundBuffers;
-    std::vector<sf::Sound> m_activeSounds;
+    std::list<sf::Sound> m_activeSounds;
 
     float m_musicVolume;
     float m_soundVolume;

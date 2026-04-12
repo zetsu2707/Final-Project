@@ -9,7 +9,7 @@
 #include <iostream>
 int main()
 {
-    sf::RenderWindow window(sf::VideoMode({ 1920, 1080 }), "Congo Clash Casino");
+    sf::RenderWindow window(sf::VideoMode({ 1920, 1080 }), "Congo Cash Casino");
     window.setFramerateLimit(144);
     AudioManager audio;
 
@@ -17,6 +17,7 @@ int main()
     audio.loadSound("button", "assets/sound/effects/button.wav");
     audio.loadSound("horseracestart", "assets/sound/effects/horseracestart.wav");
 	audio.loadSound("win", "assets/sound/effects/win.wav");
+    audio.loadSound("card", "assets/sound/effects/card.wav");
     //audio.loadSound("card", "assets/card_deal.wav");
 
 	// Background music

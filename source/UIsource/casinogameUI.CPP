@@ -6,6 +6,7 @@
 #include "UIheaders/CasinoGameUI.h"
 
 #include "Blackjack.h"
+#include "UIheaders/BlackjackUI.h"
 #include "HorseRace.h"
 #include "UIHeaders/HorseRaceUI.h"
 #include "Roulette.h"
@@ -368,10 +369,10 @@ void CasinoGameUI::handleMouseClick(const sf::Event& event, sf::RenderWindow& wi
     if (m_blackjackCard.isClicked(event, window))
     {
         m_audio.playSound("button");
-        Blackjack blackjack;
-        blackjack.play(m_player);
+        BlackjackUI blackjackUI(m_player, m_audio);
+        blackjackUI.run(window);
         refreshPlayerStats();
-        m_status.setString("Finished Blackjack.");
+        m_status.setString("Returned from Blackjack.");
         return;
     }
 

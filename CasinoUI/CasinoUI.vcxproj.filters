@@ -54,6 +54,9 @@
     <ClCompile Include="..\source\Audio.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\source\UIsource\blackjackUI.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\Blackjack.h">
@@ -87,6 +90,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\Audio.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\UIheaders\blackjackUI.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

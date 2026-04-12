@@ -141,6 +141,7 @@
     <ClCompile Include="..\source\pokerDriver.cpp" />
     <ClCompile Include="..\source\Roulette.cpp" />
     <ClCompile Include="..\source\Slots.cpp" />
+    <ClCompile Include="..\source\UIsource\blackjackUI.cpp" />
     <ClCompile Include="..\source\UIsource\casinogameUI.CPP" />
     <ClCompile Include="..\source\UIsource\HoreraceUI.cpp" />
     <ClCompile Include="..\source\UIsource\mainUI.cpp" />
@@ -154,6 +155,7 @@
     <ClInclude Include="..\include\Poker.h" />
     <ClInclude Include="..\include\Roulette.h" />
     <ClInclude Include="..\include\Slots.h" />
+    <ClInclude Include="..\include\UIheaders\blackjackUI.h" />
     <ClInclude Include="..\include\UIheaders\casinogameUI.h" />
     <ClInclude Include="..\include\UIheaders\HorseraceUI.h" />
     <ClInclude Include="..\include\UIheaders\mainUI.h" />
