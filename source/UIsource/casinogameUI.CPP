@@ -4,7 +4,7 @@
 // Last Edited: 4/11/2026
 
 #include "UIheaders/CasinoGameUI.h"
-
+#include "UIheaders/SlotsUI.h"
 #include "Blackjack.h"
 #include "UIheaders/BlackjackUI.h"
 #include "HorseRace.h"
@@ -407,7 +407,10 @@ void CasinoGameUI::handleMouseClick(const sf::Event& event, sf::RenderWindow& wi
     if (m_slotsCard.isClicked(event, window))
     {
         m_audio.playSound("button");
-        m_status.setString("Slots is work in progress.");
+        SlotsUI slotsUI(m_player, m_audio);
+        slotsUI.run(window);
+        refreshPlayerStats();
+        m_status.setString("Returned from Slots.");
         return;
     }
 
