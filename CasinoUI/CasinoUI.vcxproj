@@ -145,6 +145,8 @@
     <ClCompile Include="..\source\UIsource\casinogameUI.CPP" />
     <ClCompile Include="..\source\UIsource\HoreraceUI.cpp" />
     <ClCompile Include="..\source\UIsource\mainUI.cpp" />
+    <ClCompile Include="..\source\UIsource\PokerUI.cpp" />
+    <ClCompile Include="..\source\UIsource\slotsUI.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\Audio.h" />
@@ -159,6 +161,7 @@
     <ClInclude Include="..\include\UIheaders\casinogameUI.h" />
     <ClInclude Include="..\include\UIheaders\HorseraceUI.h" />
     <ClInclude Include="..\include\UIheaders\mainUI.h" />
+    <ClInclude Include="..\include\UIheaders\PokerUI.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

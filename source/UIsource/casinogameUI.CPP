@@ -11,6 +11,7 @@
 #include "UIHeaders/HorseRaceUI.h"
 #include "Roulette.h"
 #include "Poker.h"
+#include "UIheaders/PokerUI.h"
 #include "Audio.h"
 
 #include <optional>
@@ -389,8 +390,8 @@ void CasinoGameUI::handleMouseClick(const sf::Event& event, sf::RenderWindow& wi
     if (m_pokerCard.isClicked(event, window))
     {
         m_audio.playSound("button");
-        Poker poker;
-        poker.play(m_player);
+        PokerUI pokerUi(m_player, m_audio);
+        pokerUi.run(window);
         refreshPlayerStats();
         m_status.setString("Finished Poker.");
         return;
