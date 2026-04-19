@@ -1,43 +1,115 @@
 // Header file for Poker minigame/Poker game class.
 // Related Files:
 // Date Created: 3/29/2026
-// Last Edited: 4/5/2026
+// Last Edited: 4/19/2026
 
 #pragma once
-#include "CasinoGame.h"
+
 #include "Player.h"
+
+#include <random>
 #include <string>
 #include <vector>
-#include <random>
 
-class Poker {
+class Poker
+{
 public:
-    Poker();
-
-    void play(Player& player);
-
-private:
-
-    struct Card {
+    struct CardView
+    {
         std::string rank;
         std::string suit;
         int value;
     };
 
-    class Hand {
+    struct OpponentView
+    {
+        std::string name;
+        std::vector<CardView> cards;
+        bool folded;
+        double contribution;
+        std::string bestHandText;
+    };
+
+    enum class RoundState
+    {
+        WaitingForBet,
+        PlayerTurn,
+        Showdown,
+        RoundOver
+    };
+
+    enum class Phase
+    {
+        None,
+        PreFlop,
+        Flop,
+        Turn,
+        River,
+        Showdown
+    };
+
+    enum class RoundResult
+    {
+        None,
+        PlayerFolded,
+        PlayerWin,
+        OpponentWin,
+        SplitPot
+    };
+
+    Poker();
+
+    void resetRound();
+    bool startRound(Player& player, double ante);
+
+    void playerFold(Player& player);
+    void playerCheckCall(Player& player);
+    void playerRaise(Player& player, double raiseAmount);
+
+    RoundState getRoundState() const;
+    Phase getPhase() const;
+    RoundResult getRoundResult() const;
+
+    std::vector<CardView> getPlayerCards() const;
+    std::vector<CardView> getCommunityCards() const;
+    std::vector<OpponentView> getOpponents() const;
+
+    double getAnte() const;
+    double getPot() const;
+    double getCurrentBet() const;
+    double getAmountToCall() const;
+    double getPlayerContribution() const;
+
+    std::string getStatusText() const;
+    std::string getPhaseText() const;
+    std::string getPlayerBestHandText() const;
+    std::string getWinningSummaryText() const;
+
+    bool isRoundOver() const;
+    bool areOpponentHoleCardsHidden() const;
+    bool isPlayerTurn() const;
+
+private:
+    struct Card
+    {
+        std::string rank;
+        std::string suit;
+        int value;
+    };
+
+    class Hand
+    {
     public:
         void addCard(const Card& card);
-        int getValue() const;
         void clear();
-        void show(bool hideFirstCard = false) const;
         const std::vector<Card>& getCards() const;
-        int size() const;
 
     private:
         std::vector<Card> m_cards;
     };
 
-    class Deck {
+    class Deck
+    {
     public:
         Deck();
 
@@ -50,9 +122,9 @@ private:
         std::mt19937 m_rng;
     };
 
-    // Poker hand rankings
-    enum class HandRank {
-        HighCard,
+    enum class HandRank
+    {
+        HighCard = 0,
         OnePair,
         TwoPair,
         ThreeOfAKind,
@@ -60,60 +132,77 @@ private:
         Flush,
         FullHouse,
         FourOfAKind,
-        StraightFlush,
-        RoyalFlush
+        StraightFlush
     };
 
-    class Participant {
-    public:
-        virtual ~Participant() = default;
-
-        virtual void takeTurn(Deck& deck) = 0;
-
-        void hit(Deck& deck);         // draw a single card
-        int getHandValue() const;
-        void showHand(bool hideFirstCard = false) const;
-        const Hand& getHand() const;
-        void clearHand();
-
-    protected:
-        Hand m_hand;
+    struct EvaluatedHand
+    {
+        HandRank rank;
+        std::vector<int> tieBreakers;
     };
 
-    class PokerPlayer : public Participant {
-    public:
-        void takeTurn(Deck& deck) override;
-        void discardAndDraw(Deck& deck);  // for draw poker: swap cards
+    struct Opponent
+    {
+        std::string name;
+        Hand hand;
+        bool folded;
+        double contribution;
+        double totalCommitted;
+        std::string bestHandText;
     };
 
-    class AIOpponent : public Participant {
-    public:
-        explicit AIOpponent(std::string name);
-        void takeTurn(Deck& deck) override;
-        const std::string& getName() const;
+    void dealHoleCards();
 
-    private:
-        std::string m_name;
-    };
+    void beginPhase(Phase phase);
+    void dealFlop();
+    void dealTurn();
+    void dealRiver();
+    void advanceToNextPhase(Player& player, const std::string& prefixStatus);
 
-    // Hand evaluation
-    HandRank evaluateHand(const Hand& hand) const;
-    std::string handRankToString(HandRank rank) const;
-    bool winsAgainst(const Hand& a, const Hand& b) const;
+    void resolveOpponentsAfterPlayerCheck(Player& player);
+    void resolveOpponentsFacingPlayerBet(Player& player);
+    void maybeAwardPotIfEveryoneFolded(Player& player);
 
-    void showBanner() const;
-    double getBet(const Player& player) const;
-    void dealInitialHands();
-    void showAllHands(bool revealOpponents, const std::vector<bool>& folded) const;
-    double bettingRound(Player& player, double& pot,
-                    std::vector<bool>& foldedOpponents,
-                    double currentBet, bool isPreFlop,
-                    const std::vector<Card>& community);
+    std::vector<Card> buildCombinedCards(const Hand& holeCards) const;
 
-    template <typename T>
-    T getValidatedInput(T min, T max) const;
+    EvaluatedHand evaluateBestHand(const std::vector<Card>& cards) const;
+    EvaluatedHand evaluateFiveCardHand(const std::vector<Card>& cards) const;
+    static bool isBetterHand(const EvaluatedHand& left, const EvaluatedHand& right);
+    static bool isEqualHand(const EvaluatedHand& left, const EvaluatedHand& right);
+    static std::string handRankToString(HandRank rank);
+    static std::string phaseToString(Phase phase);
+
+    int estimateOpponentStrength(const Opponent& opponent) const;
+    bool shouldOpponentLeadBet(const Opponent& opponent) const;
+    bool shouldOpponentFoldToBet(const Opponent& opponent, double amountToCall) const;
+    double chooseOpponentBetSize() const;
+    int randomPercent();
+
+    void settlePlayerFold();
+    void settlePlayerWin(Player& player, const std::string& statusText);
+    void settleShowdown(Player& player);
+
+    std::vector<CardView> toCardViews(const std::vector<Card>& cards) const;
 
     Deck m_deck;
-    PokerPlayer m_player;
-    std::vector<AIOpponent> m_opponents;
+    std::mt19937 m_rng;
+
+    Hand m_playerHand;
+    std::vector<Opponent> m_opponents;
+    std::vector<Card> m_communityCards;
+
+    double m_ante;
+    double m_pot;
+    double m_currentBet;
+    double m_playerContribution;
+    double m_playerTotalCommitted;
+
+    RoundState m_roundState;
+    Phase m_phase;
+    RoundResult m_roundResult;
+
+    bool m_hideOpponentHoleCards;
+    std::string m_statusText;
+    std::string m_playerBestHandText;
+    std::string m_winningSummaryText;
 };
