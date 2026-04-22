@@ -31,3 +31,4 @@ Release/
 *.json.backup
 *.exe
 *.dll
+CasinoUI/CasinoUI.vcxproj
