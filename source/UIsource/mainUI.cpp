@@ -1,17 +1,19 @@
-// Description: Implementation file for the MainUI start menu/controller class.
+﻿// Description: Implementation file for the MainUI start menu/controller class.
 // Related Files: MainUI.h, Player.h, CasinoGameUI.h
 // Date Created: 4/7/2026
-// Last Edited: 4/11/2026
+// Last Edited: 4/20/2026
 
 #include "UIheaders/MainUI.h"
 #include "Player.h"
 #include "UIheaders/CasinoGameUI.h"
 
+#include <algorithm>
 #include <optional>
 #include <sstream>
 
 MainUI::Button::Button(const sf::Font& font,
     const std::string& label,
+
     sf::Vector2f position,
     sf::Vector2f size)
     : box(size), text(font, label, 36)
@@ -136,6 +138,11 @@ MainUI::MainUI(AudioManager& audio)
     m_backgroundSprite(m_backgroundTexture),
     m_logoTexture("assets/menu_logo.png"),
     m_logoSprite(m_logoTexture),
+    m_introTitle(m_font, "CONGO CASH CASINO", 90),
+    m_noteSprite(m_noteTexture),
+    m_introSubtitle(m_font, "Where Fortune Favors the Bold", 42),
+    m_introPrompt(m_font, "Click anywhere or press any key to continue...", 30),
+    m_noteContinuePrompt(m_font, "[ Click anywhere to continue ]", 26),
     m_status(m_font, "Main Menu", 32),
     m_statisticsTitle(m_font, "STATISTICS", 58),
     m_statisticsBody(m_font, "Statistics are still a work in progress.\nThis option is a placeholder for now.", 34),
@@ -143,7 +150,7 @@ MainUI::MainUI(AudioManager& audio)
     m_nameLabel(m_font, "Player Name", 34),
     m_loadGameTitle(m_font, "LOAD GAME", 58),
     m_filenameLabel(m_font, "Save Filename", 34),
-    m_currentScreen(Screen::MainMenu),
+    m_currentScreen(Screen::GrandpaNote),
     m_activeField(ActiveField::None),
     m_newGame(m_font, "New Game", { 760.f, 320.f }, { 400.f, 85.f }),
     m_loadGame(m_font, "Load Game", { 760.f, 430.f }, { 400.f, 85.f }),
@@ -169,6 +176,77 @@ MainUI::MainUI(AudioManager& audio)
         });
     m_logoSprite.setPosition({ 610.f, 25.f });
 
+    // ── Intro screen setup ────────────────────────────────────────────────
+    m_introTitle.setFillColor(sf::Color(255, 215, 0, 0));
+    {
+        const sf::FloatRect b = m_introTitle.getLocalBounds();
+        m_introTitle.setOrigin({ b.position.x + b.size.x / 2.f, b.position.y + b.size.y / 2.f });
+        m_introTitle.setPosition({ 960.f, 380.f });
+    }
+
+    m_introSubtitle.setFillColor(sf::Color(255, 255, 255, 0));
+    {
+        const sf::FloatRect b = m_introSubtitle.getLocalBounds();
+        m_introSubtitle.setOrigin({ b.position.x + b.size.x / 2.f, b.position.y + b.size.y / 2.f });
+        m_introSubtitle.setPosition({ 960.f, 510.f });
+    }
+
+    m_introPrompt.setFillColor(sf::Color(200, 200, 200, 0));
+    {
+        const sf::FloatRect b = m_introPrompt.getLocalBounds();
+        m_introPrompt.setOrigin({ b.position.x + b.size.x / 2.f, b.position.y + b.size.y / 2.f });
+        m_introPrompt.setPosition({ 960.f, 630.f });
+    }
+
+    m_introClock.restart();
+
+    // ── Grandpa's note setup ──────────────────────────────────────────────
+    m_noteBackground.setSize({ 1920.f, 1080.f });
+    m_noteBackground.setFillColor(sf::Color(10, 8, 5));
+
+    m_notePaper.setSize({ 860.f, 680.f });
+    m_notePaper.setPosition({ 530.f, 180.f });
+    m_notePaper.setFillColor(sf::Color(245, 235, 210));
+    m_notePaper.setOutlineColor(sf::Color(160, 130, 80));
+    m_notePaper.setOutlineThickness(3.f);
+
+    const std::vector<std::string> noteText = {
+        "To whoever this may find,",
+        "",
+        "If you're reading this, then I'm already gone.",
+        "I left you $200 not much, but it's a start.",
+        "",
+        "Win $5,000 and you'll understand why I left.",
+        "Some things can only be learned the hard way.",
+        "",
+        "Play smart. Trust your gut.",
+        "And remember always bet on Hakari.",
+        "",
+        "Good luck.",
+        "",
+        "Mistery Man"
+    };
+
+    float noteY = 310.f;
+    for (const std::string& line : noteText)
+    {
+        sf::Text t(m_font, line, line.empty() ? 10u : (line.rfind("  —", 0) == 0 ? 30u : 28u));
+        t.setFillColor(sf::Color(40, 25, 10));
+        t.setPosition({ 690.f, noteY });
+        m_noteLines.push_back(t);
+        noteY += (line.empty() ? 12.f : 32.f);
+    }
+
+    m_noteContinuePrompt.setFillColor(sf::Color(120, 90, 50));
+    {
+        const sf::FloatRect b = m_noteContinuePrompt.getLocalBounds();
+        m_noteContinuePrompt.setOrigin({ b.position.x + b.size.x / 2.f, b.position.y });
+        m_noteContinuePrompt.setPosition({ 960.f, 820.f });
+    }
+
+    m_noteAlphaClock.restart();
+
+    // ── Main menu setup ───────────────────────────────────────────────────
     m_status.setFillColor(sf::Color::White);
     m_status.setPosition({ 790.f, 950.f });
 
@@ -258,6 +336,81 @@ MainUI::MainUI(AudioManager& audio)
     }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Draw: Grandpa's Note
+// ─────────────────────────────────────────────────────────────────────────────
+void MainUI::drawGrandpaNote(sf::RenderWindow& window)
+{
+    // Fade in over 1.5 seconds
+    const float elapsed = m_noteAlphaClock.getElapsedTime().asSeconds();
+    m_noteAlpha = std::min(elapsed / 1.5f, 1.0f) * 255.f;
+    const uint8_t a = static_cast<uint8_t>(m_noteAlpha);
+
+    // Blink the continue prompt
+    uint8_t promptAlpha = 0;
+    if (elapsed > 1.5f)
+    {
+        const float blink = std::sin((elapsed - 1.5f) * 2.5f);
+        promptAlpha = static_cast<uint8_t>(std::max(0.f, blink) * 200.f);
+    }
+
+    m_noteBackground.setFillColor(sf::Color(10, 8, 5, a));
+    window.draw(m_noteBackground);
+
+    const sf::Vector2u noteSize = m_noteTexture.getSize();
+    sf::Color paperColor = m_notePaper.getFillColor();
+    paperColor.a = a;
+    m_notePaper.setFillColor(paperColor);
+
+    sf::Color outlineColor = m_notePaper.getOutlineColor();
+    outlineColor.a = a;
+    m_notePaper.setOutlineColor(outlineColor);
+    window.draw(m_notePaper);
+
+    for (sf::Text line : m_noteLines)
+    {
+        sf::Color c = line.getFillColor();
+        c.a = a;
+        line.setFillColor(c);
+        window.draw(line);
+    }
+
+    m_noteContinuePrompt.setFillColor(sf::Color(120, 90, 50, promptAlpha));
+    window.draw(m_noteContinuePrompt);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Draw: Intro
+// ─────────────────────────────────────────────────────────────────────────────
+void MainUI::drawIntroScreen(sf::RenderWindow& window)
+{
+    window.draw(m_backgroundSprite);
+
+    // Fade in over 2 seconds
+    const float elapsed = m_introClock.getElapsedTime().asSeconds();
+    m_introAlpha = std::min(elapsed / 2.0f, 1.0f) * 255.f;
+    const uint8_t a = static_cast<uint8_t>(m_introAlpha);
+
+    // Prompt blinks after fully faded in
+    uint8_t promptAlpha = a;
+    if (elapsed > 2.5f)
+    {
+        const float blink = std::sin((elapsed - 2.5f) * 3.14f);
+        promptAlpha = static_cast<uint8_t>(std::max(0.f, blink) * 255.f);
+    }
+
+    m_introTitle.setFillColor(sf::Color(255, 215, 0, a));
+    m_introSubtitle.setFillColor(sf::Color(255, 255, 255, a));
+    m_introPrompt.setFillColor(sf::Color(200, 200, 200, promptAlpha));
+
+    window.draw(m_introTitle);
+    window.draw(m_introSubtitle);
+    window.draw(m_introPrompt);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Draw: other screens (unchanged from original)
+// ─────────────────────────────────────────────────────────────────────────────
 void MainUI::drawMainMenu(sf::RenderWindow& window)
 {
     window.draw(m_backgroundSprite);
@@ -310,6 +463,9 @@ void MainUI::drawLoadGameScreen(sf::RenderWindow& window)
     window.draw(m_status);
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Input helpers
+// ─────────────────────────────────────────────────────────────────────────────
 void MainUI::handleBackspace()
 {
     switch (m_activeField)
@@ -334,6 +490,21 @@ void MainUI::handleBackspace()
 
 void MainUI::handleTextEntered(const sf::Event& event)
 {
+    // On the note screen any key press advances to the intro
+    if (m_currentScreen == Screen::GrandpaNote)
+    {
+        m_currentScreen = Screen::Intro;
+        m_introClock.restart();
+        return;
+    }
+
+    // On the intro screen any key press advances to the main menu
+    if (m_currentScreen == Screen::Intro)
+    {
+        m_currentScreen = Screen::MainMenu;
+        return;
+    }
+
     const auto* textEntered = event.getIf<sf::Event::TextEntered>();
     if (!textEntered)
         return;
@@ -378,7 +549,6 @@ void MainUI::handleTextEntered(const sf::Event& event)
 void MainUI::clearFormState()
 {
     m_activeField = ActiveField::None;
-
     m_nameInput.setActive(false);
     m_filenameInput.setActive(false);
 }
@@ -440,6 +610,29 @@ void MainUI::startLoadGame(sf::RenderWindow& window)
 
 void MainUI::handleMouseClick(const sf::Event& event, sf::RenderWindow& window)
 {
+    // Clicking on the note advances to the intro
+    if (m_currentScreen == Screen::GrandpaNote)
+    {
+        if (const auto* mousePressed = event.getIf<sf::Event::MouseButtonPressed>())
+        {
+            (void)mousePressed;
+            m_currentScreen = Screen::Intro;
+            m_introClock.restart();
+        }
+        return;
+    }
+
+    // Clicking anywhere on the intro advances to main menu
+    if (m_currentScreen == Screen::Intro)
+    {
+        if (const auto* mousePressed = event.getIf<sf::Event::MouseButtonPressed>())
+        {
+            (void)mousePressed;
+            m_currentScreen = Screen::MainMenu;
+        }
+        return;
+    }
+
     if (m_currentScreen == Screen::MainMenu)
     {
         if (m_newGame.isClicked(event, window))
@@ -569,6 +762,9 @@ void MainUI::handleMouseClick(const sf::Event& event, sf::RenderWindow& window)
     }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Main loop
+// ─────────────────────────────────────────────────────────────────────────────
 void MainUI::run(sf::RenderWindow& window)
 {
     while (window.isOpen())
@@ -585,6 +781,7 @@ void MainUI::run(sf::RenderWindow& window)
             handleMouseClick(*event, window);
         }
 
+        // Update hover states
         if (m_currentScreen == Screen::MainMenu)
         {
             m_newGame.update(window);
@@ -613,6 +810,12 @@ void MainUI::run(sf::RenderWindow& window)
 
         switch (m_currentScreen)
         {
+        case Screen::GrandpaNote:
+            drawGrandpaNote(window);
+            break;
+        case Screen::Intro:
+            drawIntroScreen(window);
+            break;
         case Screen::MainMenu:
             drawMainMenu(window);
             break;

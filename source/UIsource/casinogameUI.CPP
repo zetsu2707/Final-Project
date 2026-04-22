@@ -1,7 +1,7 @@
-// Description: Implementation file for the CasinoGameUI game selection/controller class.
+﻿// Description: Implementation file for the CasinoGameUI game selection/controller class.
 // Related Files: CasinoGameUI.h, Player.h, Blackjack.h, HorseRace.h, Roulette.h, Poker.h, Audio.h
 // Date Created: 4/7/2026
-// Last Edited: 4/11/2026
+// Last Edited: 4/20/2026
 
 #include "UIheaders/CasinoGameUI.h"
 #include "UIheaders/SlotsUI.h"
@@ -17,7 +17,16 @@
 #include <optional>
 #include <sstream>
 #include <memory>
+#include <iomanip>
 
+// ── Forward-declared file-scope variables (same as original) ──────────────────
+enum class Screen { Menu, HorseRace };
+Screen m_currentScreen = Screen::Menu;
+std::unique_ptr<HorseRaceUI> m_horseRaceUI;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Button
+// ─────────────────────────────────────────────────────────────────────────────
 CasinoGameUI::Button::Button(const sf::Font& font,
     const std::string& label,
     sf::Vector2f position,
@@ -83,6 +92,9 @@ void CasinoGameUI::Button::draw(sf::RenderWindow& window) const
     window.draw(text);
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// InputField
+// ─────────────────────────────────────────────────────────────────────────────
 CasinoGameUI::InputField::InputField(const sf::Font& font,
     const std::string& placeholderText,
     sf::Vector2f position,
@@ -135,7 +147,12 @@ void CasinoGameUI::InputField::draw(sf::RenderWindow& window) const
     window.draw(text);
 }
 
-CasinoGameUI::ImageCard::ImageCard(const std::string& texturePath, sf::Vector2f position, sf::Vector2f size)
+// ─────────────────────────────────────────────────────────────────────────────
+// ImageCard
+// ─────────────────────────────────────────────────────────────────────────────
+CasinoGameUI::ImageCard::ImageCard(const std::string& texturePath,
+    sf::Vector2f position,
+    sf::Vector2f size)
     : texture(texturePath),
     sprite(texture),
     hoverOutline(size)
@@ -171,7 +188,8 @@ void CasinoGameUI::ImageCard::update(const sf::RenderWindow& window)
         hoverOutline.setOutlineColor(sf::Color::Transparent);
 }
 
-bool CasinoGameUI::ImageCard::isClicked(const sf::Event& event, const sf::RenderWindow& window) const
+bool CasinoGameUI::ImageCard::isClicked(const sf::Event& event,
+    const sf::RenderWindow& window) const
 {
     if (const auto* mousePressed = event.getIf<sf::Event::MouseButtonPressed>())
     {
@@ -193,12 +211,17 @@ void CasinoGameUI::ImageCard::draw(sf::RenderWindow& window) const
     window.draw(hoverOutline);
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Constructor
+// ─────────────────────────────────────────────────────────────────────────────
 CasinoGameUI::CasinoGameUI(Player& player, AudioManager& audio)
     : m_player(player),
     m_audio(audio),
     m_running(true),
     m_saveModeActive(false),
     m_saveFieldActive(false),
+    m_showEndScreen(false),
+    m_playerWon(false),
     m_font("assets/arial.ttf"),
     m_backgroundTexture("assets/game_selection_background.jpg"),
     m_backgroundSprite(m_backgroundTexture),
@@ -210,6 +233,9 @@ CasinoGameUI::CasinoGameUI(Player& player, AudioManager& audio)
     m_status(m_font, "Choose a game or option.", 30),
     m_playerNameText(m_font, "", 28),
     m_balanceText(m_font, "", 28),
+    m_endTitle(m_font, "", 100),
+    m_endSubtitle(m_font, "", 46),
+    m_endStats(m_font, "", 34),
     m_horseRaceCard("assets/horse_race_card.png", { 80.f, 270.f }, { 500.f, 220.f }),
     m_blackjackCard("assets/blackjack_card.png", { 1330.f, 270.f }, { 500.f, 220.f }),
     m_rouletteCard("assets/roulette_card.png", { 390.f, 540.f }, { 500.f, 220.f }),
@@ -218,6 +244,7 @@ CasinoGameUI::CasinoGameUI(Player& player, AudioManager& audio)
     m_saveGameButton(m_font, "Save Game", { 540.f, 860.f }, { 320.f, 80.f }),
     m_returnButton(m_font, "Return to Main Menu", { 1230.f, 860.f }, { 420.f, 80.f }),
     m_confirmSaveButton(m_font, "Confirm Save", { 1250.f, 960.f }, { 280.f, 70.f }),
+    m_endMenuButton(m_font, "Return to Main Menu", { 660.f, 750.f }, { 600.f, 90.f }),
     m_saveFilenameInput(m_font, "Enter save filename", { 390.f, 960.f }, { 820.f, 70.f })
 {
     const sf::Vector2u backgroundSize = m_backgroundTexture.getSize();
@@ -261,9 +288,90 @@ CasinoGameUI::CasinoGameUI(Player& player, AudioManager& audio)
     m_balanceText.setFillColor(sf::Color::White);
     m_balanceText.setPosition({ 1250.f, 150.f });
 
+  
+    m_endTitle.setFillColor(sf::Color::White);
+    m_endSubtitle.setFillColor(sf::Color::White);
+    m_endStats.setFillColor(sf::Color::White);
+
     refreshPlayerStats();
 }
 
+
+void CasinoGameUI::checkEndCondition()
+{
+    const double balance = m_player.getBalance();
+
+    if (balance >= 5000.0)
+    {
+        m_playerWon = true;
+        m_showEndScreen = true;
+        m_audio.playSound("hakariwin");
+    }
+    else if (balance <= 0.0)
+    {
+        m_playerWon = false;
+        m_showEndScreen = true;
+        m_audio.playSound("lose");
+    }
+}
+
+
+void CasinoGameUI::drawEndScreen(sf::RenderWindow& window)
+{
+ 
+    sf::RectangleShape overlay({ 1920.f, 1080.f });
+    overlay.setFillColor(sf::Color(0, 0, 0, 200));
+    window.draw(m_backgroundSprite);
+    window.draw(overlay);
+
+    if (m_playerWon)
+    {
+        m_endTitle.setString("YOU WIN!");
+        m_endTitle.setFillColor(sf::Color(255, 215, 0));   // gold
+        m_endSubtitle.setString("Congratulations! You reached $5,000!");
+        m_endSubtitle.setFillColor(sf::Color(255, 255, 180));
+    }
+    else
+    {
+        m_endTitle.setString("GAME OVER");
+        m_endTitle.setFillColor(sf::Color(220, 50, 50));   // red
+        m_endSubtitle.setString("You've run out of money. Better luck next time!");
+        m_endSubtitle.setFillColor(sf::Color(255, 180, 180));
+    }
+
+    // Build stats string
+    std::ostringstream stats;
+    stats << std::fixed << std::setprecision(2);
+    stats << "Player: " << m_player.getName() << "\n";
+    stats << "Final Balance:  $" << m_player.getBalance() << "\n";
+    stats << "Total Wagered:  $" << m_player.getTotalBetted() << "\n";
+    stats << "Total Won:      $" << m_player.getTotalWon() << "\n";
+    stats << "Net Profit:     $" << m_player.getNetProfit();
+    m_endStats.setString(stats.str());
+    m_endStats.setFillColor(sf::Color(220, 220, 220));
+
+    // Centre all text
+    auto centre = [&](sf::Text& t, float y)
+        {
+            const sf::FloatRect b = t.getLocalBounds();
+            t.setOrigin({ b.position.x + b.size.x / 2.f, b.position.y + b.size.y / 2.f });
+            t.setPosition({ 960.f, y });
+        };
+
+    centre(m_endTitle, 300.f);
+    centre(m_endSubtitle, 430.f);
+    centre(m_endStats, 570.f);
+
+    window.draw(m_endTitle);
+    window.draw(m_endSubtitle);
+    window.draw(m_endStats);
+
+    m_endMenuButton.draw(window);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// refreshPlayerStats
+// ─────────────────────────────────────────────────────────────────────────────
 void CasinoGameUI::refreshPlayerStats()
 {
     {
@@ -343,17 +451,22 @@ void CasinoGameUI::saveGame()
     }
 }
 
-enum class Screen
-{
-    Menu,
-    HorseRace
-};
-
-Screen m_currentScreen = Screen::Menu;
-std::unique_ptr<HorseRaceUI> m_horseRaceUI;
-
+// ─────────────────────────────────────────────────────────────────────────────
+// handleMouseClick
+// ─────────────────────────────────────────────────────────────────────────────
 void CasinoGameUI::handleMouseClick(const sf::Event& event, sf::RenderWindow& window)
 {
+    // End-screen: only the "Return to Menu" button is active
+    if (m_showEndScreen)
+    {
+        if (m_endMenuButton.isClicked(event, window))
+        {
+            m_audio.playSound("button");
+            m_running = false;
+        }
+        return;
+    }
+
     if (m_horseRaceCard.isClicked(event, window))
     {
         m_audio.playSound("button");
@@ -373,6 +486,7 @@ void CasinoGameUI::handleMouseClick(const sf::Event& event, sf::RenderWindow& wi
         BlackjackUI blackjackUI(m_player, m_audio);
         blackjackUI.run(window);
         refreshPlayerStats();
+        checkEndCondition();
         m_status.setString("Returned from Blackjack.");
         return;
     }
@@ -383,6 +497,7 @@ void CasinoGameUI::handleMouseClick(const sf::Event& event, sf::RenderWindow& wi
         Roulette roulette;
         roulette.play(m_player);
         refreshPlayerStats();
+        checkEndCondition();
         m_status.setString("Finished Roulette.");
         return;
     }
@@ -393,15 +508,8 @@ void CasinoGameUI::handleMouseClick(const sf::Event& event, sf::RenderWindow& wi
         PokerUI pokerUi(m_player, m_audio);
         pokerUi.run(window);
         refreshPlayerStats();
+        checkEndCondition();
         m_status.setString("Finished Poker.");
-        return;
-    }
-
-    if (m_saveGameButton.isClicked(event, window))
-    {
-        m_audio.playSound("button");
-        m_saveModeActive = true;
-        m_status.setString("Enter a save filename.");
         return;
     }
 
@@ -411,7 +519,16 @@ void CasinoGameUI::handleMouseClick(const sf::Event& event, sf::RenderWindow& wi
         SlotsUI slotsUI(m_player, m_audio);
         slotsUI.run(window);
         refreshPlayerStats();
+        checkEndCondition();
         m_status.setString("Returned from Slots.");
+        return;
+    }
+
+    if (m_saveGameButton.isClicked(event, window))
+    {
+        m_audio.playSound("button");
+        m_saveModeActive = true;
+        m_status.setString("Enter a save filename.");
         return;
     }
 
@@ -443,6 +560,9 @@ void CasinoGameUI::handleMouseClick(const sf::Event& event, sf::RenderWindow& wi
     }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// draw (normal game selection screen)
+// ─────────────────────────────────────────────────────────────────────────────
 void CasinoGameUI::draw(sf::RenderWindow& window)
 {
     window.draw(m_backgroundSprite);
@@ -471,6 +591,9 @@ void CasinoGameUI::draw(sf::RenderWindow& window)
     window.draw(m_status);
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// run
+// ─────────────────────────────────────────────────────────────────────────────
 void CasinoGameUI::run(sf::RenderWindow& window)
 {
     if (!m_horseRaceUI)
@@ -491,6 +614,13 @@ void CasinoGameUI::run(sf::RenderWindow& window)
                 continue;
             }
 
+            if (m_showEndScreen)
+            {
+                // Only handle end-screen clicks
+                handleMouseClick(*event, window);
+                continue;
+            }
+
             if (m_currentScreen == Screen::HorseRace)
             {
                 m_horseRaceUI->handleEvent(*event);
@@ -504,36 +634,46 @@ void CasinoGameUI::run(sf::RenderWindow& window)
             }
         }
 
-        if (m_currentScreen == Screen::HorseRace)
+        if (!m_showEndScreen)
         {
-            m_horseRaceUI->update(deltaTime);
-
-            if (m_horseRaceUI->wantsToLeave())
+            if (m_currentScreen == Screen::HorseRace)
             {
-                m_horseRaceUI->clearLeaveRequest();
-                m_currentScreen = Screen::Menu;
-                m_audio.playMusic("assets/sound/background/main_track.wav", true, 15.f);
-                refreshPlayerStats();
-                m_status.setString("Returned from Horse Race.");
+                m_horseRaceUI->update(deltaTime);
+
+                if (m_horseRaceUI->wantsToLeave())
+                {
+                    m_horseRaceUI->clearLeaveRequest();
+                    m_currentScreen = Screen::Menu;
+                    m_audio.playMusic("assets/sound/background/main_track.wav", true, 15.f);
+                    refreshPlayerStats();
+                    checkEndCondition();
+                    m_status.setString("Returned from Horse Race.");
+                }
+            }
+            else
+            {
+                m_horseRaceCard.update(window);
+                m_blackjackCard.update(window);
+                m_rouletteCard.update(window);
+                m_pokerCard.update(window);
+                m_slotsCard.update(window);
+                m_saveGameButton.update(window);
+                m_returnButton.update(window);
+
+                if (m_saveModeActive)
+                    m_confirmSaveButton.update(window);
             }
         }
         else
         {
-            m_horseRaceCard.update(window);
-            m_blackjackCard.update(window);
-            m_rouletteCard.update(window);
-            m_pokerCard.update(window);
-            m_slotsCard.update(window);
-            m_saveGameButton.update(window);
-            m_returnButton.update(window);
-
-            if (m_saveModeActive)
-                m_confirmSaveButton.update(window);
+            m_endMenuButton.update(window);
         }
 
         window.clear();
 
-        if (m_currentScreen == Screen::HorseRace)
+        if (m_showEndScreen)
+            drawEndScreen(window);
+        else if (m_currentScreen == Screen::HorseRace)
             m_horseRaceUI->draw();
         else
             draw(window);

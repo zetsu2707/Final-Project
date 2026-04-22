@@ -33,3 +33,4 @@ Release/
 *.dll
 CasinoUI/CasinoUI.vcxproj
 CasinoUI/assets/
+SFML-3.1.0/

@@ -1,7 +1,7 @@
 // Header file for MainUI start menu/controller class.
 // Related Files: MainUI.cpp, Player.h, CasinoGameUI.h
 // Date Created: 4/7/2026
-// Last Edited: 4/11/2026
+// Last Edited: 4/20/2026
 
 #pragma once
 
@@ -21,6 +21,8 @@ private:
 
     enum class Screen
     {
+        GrandpaNote,
+        Intro,
         MainMenu,
         Instructions,
         Statistics,
@@ -71,6 +73,8 @@ private:
         void draw(sf::RenderWindow& window) const;
     };
 
+    void drawGrandpaNote(sf::RenderWindow& window);
+    void drawIntroScreen(sf::RenderWindow& window);
     void drawMainMenu(sf::RenderWindow& window);
     void drawInstructionsScreen(sf::RenderWindow& window);
     void drawStatisticsScreen(sf::RenderWindow& window);
@@ -88,24 +92,38 @@ private:
     sf::Font m_font;
 
     sf::Texture m_backgroundTexture;
-    sf::Sprite m_backgroundSprite;
-
+    sf::Sprite  m_backgroundSprite;
     sf::Texture m_logoTexture;
-    sf::Sprite m_logoSprite;
+    sf::Sprite  m_logoSprite;
+
+
+    sf::RectangleShape    m_noteBackground;
+    sf::RectangleShape    m_notePaper;
+    std::vector<sf::Text> m_noteLines;
+    sf::Texture           m_noteTexture;
+    sf::Sprite            m_noteSprite;
+    sf::Text              m_noteContinuePrompt;
+    sf::Clock             m_noteAlphaClock;
+    float                 m_noteAlpha = 0.f;
+
+
+    sf::Text  m_introTitle;
+    sf::Text  m_introSubtitle;
+    sf::Text  m_introPrompt;
+    sf::Clock m_introClock;
+    float     m_introAlpha = 0.f;
 
     sf::Text m_status;
     std::vector<sf::Text> m_instructionLines;
 
     sf::Text m_statisticsTitle;
     sf::Text m_statisticsBody;
-
     sf::Text m_newGameTitle;
     sf::Text m_nameLabel;
-
     sf::Text m_loadGameTitle;
     sf::Text m_filenameLabel;
 
-    Screen m_currentScreen;
+    Screen      m_currentScreen;
     ActiveField m_activeField;
 
     Button m_newGame;

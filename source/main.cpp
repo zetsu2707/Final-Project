@@ -18,6 +18,8 @@ int main()
     audio.loadSound("horseracestart", "assets/sound/effects/horseracestart.wav");
 	audio.loadSound("win", "assets/sound/effects/win.wav");
     audio.loadSound("card", "assets/sound/effects/card.wav");
+    audio.loadSound("lose", "assets/sound/effects/lose.wav");
+    audio.loadSound("hakariwin", "assets/sound/effects/hakariwin.wav");
     //audio.loadSound("card", "assets/card_deal.wav");
 
 	// Background music

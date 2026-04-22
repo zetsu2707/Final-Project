@@ -1,151 +1,170 @@
 // Roulette minigame implementation file.
 // Related Files: Roulette.h, Player.h
 // Date Created: 3/29/2026
-// Last Edited: 04/05/2026
+// Last Edited: 04/21/2026
 
 #include "Roulette.h"
-#include <iostream>
-#include <limits>
 
-Roulette::Roulette() : m_rng(std::random_device{}()) {}
-
-void Roulette::showBanner() const {
-    std::cout << "============================\n";
-    std::cout << "         ROULETTE           \n";
-    std::cout << "============================\n";
+Roulette::Roulette()
+    : m_rng(std::random_device{}())
+{
 }
 
-int Roulette::spinWheel() {
-    std::uniform_int_distribution<int> dist(0, 36);
-    return dist(m_rng);
+int Roulette::spinWheel()
+{
+    std::uniform_int_distribution<int> distribution(0, 36);
+    return distribution(m_rng);
 }
 
-bool Roulette::isRed(int number) const {
-    static std::vector<int> reds = {
-        1,3,5,7,9,12,14,16,18,
-        19,21,23,25,27,30,32,34,36
+bool Roulette::isRedNumber(int number) const
+{
+    static constexpr std::array<int, 18> redNumbers =
+    {
+        1, 3, 5, 7, 9, 12, 14, 16, 18,
+        19, 21, 23, 25, 27, 30, 32, 34, 36
     };
 
-    for (int r : reds) {
-        if (r == number) return true;
+    return containsValue(redNumbers, number);
+}
+
+bool Roulette::isEvenMoneyBet(Roulette::BetType type) const
+{
+    return type == BetType::Red
+        || type == BetType::Black
+        || type == BetType::Even
+        || type == BetType::Odd;
+}
+
+Roulette::PocketColor Roulette::getPocketColor(int number) const
+{
+    if (number == 0)
+        return PocketColor::Green;
+
+    return isRedNumber(number) ? PocketColor::Red : PocketColor::Black;
+}
+
+bool Roulette::isWinningBet(const BetRequest& bet, int winningNumber) const
+{
+    if (bet.type == BetType::Number)
+        return bet.chosenNumber == winningNumber;
+
+    if (winningNumber == 0)
+        return false;
+
+    switch (bet.type)
+    {
+    case BetType::Red:
+        return isRedNumber(winningNumber);
+
+    case BetType::Black:
+        return !isRedNumber(winningNumber);
+
+    case BetType::Even:
+        return (winningNumber % 2) == 0;
+
+    case BetType::Odd:
+        return (winningNumber % 2) == 1;
+
+    case BetType::Number:
+        return bet.chosenNumber == winningNumber;
     }
+
     return false;
 }
 
-double Roulette::getBetAmount(const Player& player) const {
-    double bet;
+bool Roulette::canPlaceBet(const Player& player, const BetRequest& bet) const
+{
+    if (bet.amount <= 0.0)
+        return false;
 
-    while (true) {
-        std::cout << "Balance: $" << player.getBalance() << "\n";
-        std::cout << "Enter bet amount: $";
+    if (!player.hasSufficientFunds(bet.amount))
+        return false;
 
-        if (!(std::cin >> bet)) {
-            std::cin.clear();
-            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-            std::cout << "Invalid input.\n";
-            continue;
-        }
+    if (bet.type == BetType::Number)
+        return bet.chosenNumber >= 0 && bet.chosenNumber <= 36;
 
-        if (bet <= 0 || !player.hasSufficientFunds(bet)) {
-            std::cout << "Invalid bet.\n";
-            continue;
-        }
-
-        return bet;
-    }
+    return isEvenMoneyBet(bet.type);
 }
 
-int Roulette::getValidatedNumber(int min, int max) const {
-    int value;
+Roulette::RoundOutcome Roulette::playRound(Player& player, const BetRequest& bet)
+{
+    RoundOutcome outcome{};
+    outcome.betAmount = bet.amount;
 
-    while (true) {
-        if (std::cin >> value && value >= min && value <= max) {
-            return value;
+    if (!canPlaceBet(player, bet))
+    {
+        outcome.message = "Invalid roulette bet.";
+        return outcome;
+    }
+
+    if (!player.placeBet(bet.amount))
+    {
+        outcome.message = "Not enough balance for that bet.";
+        return outcome;
+    }
+
+    outcome.success = true;
+    outcome.winningNumber = spinWheel();
+    outcome.winningColor = getPocketColor(outcome.winningNumber);
+    outcome.win = isWinningBet(bet, outcome.winningNumber);
+
+    if (outcome.win)
+    {
+        if (bet.type == BetType::Number)
+        {
+            outcome.payout = bet.amount * 36.0;
+            outcome.netChange = bet.amount * 35.0;
+            outcome.message = "Straight-up number hit.";
+        }
+        else
+        {
+            outcome.payout = bet.amount * 2.0;
+            outcome.netChange = bet.amount;
+            outcome.message = "Winning even-money bet.";
         }
 
-        std::cin.clear();
-        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-        std::cout << "Invalid input. Try again: ";
+        player.addWinnings(outcome.payout);
     }
+    else
+    {
+        outcome.payout = 0.0;
+        outcome.netChange = -bet.amount;
+        outcome.message = "Bet lost.";
+    }
+
+    return outcome;
 }
 
-void Roulette::play(Player& player) {
-    showBanner();
-
-    while (true) {
-        std::cout << "\n--- Betting Options ---\n";
-        std::cout << "1. Number (pays 35:1)\n";
-        std::cout << "2. Red (pays 1:1)\n";
-        std::cout << "3. Black (pays 1:1)\n";
-        std::cout << "4. Even (pays 1:1)\n";
-        std::cout << "5. Odd (pays 1:1)\n";
-        std::cout << "0. Exit\n";
-        std::cout << "Choice: ";
-
-        int choice = getValidatedNumber(0, 5);
-
-        if (choice == 0) break;
-
-        double betAmount = getBetAmount(player);
-
-        if (!player.placeBet(betAmount)) {
-            std::cout << "Bet failed.\n";
-            continue;
-        }
-
-        Bet bet;
-        bet.amount = betAmount;
-
-        if (choice == 1) {
-            bet.type = "number";
-            std::cout << "Pick a number (0-36): ";
-            bet.number = getValidatedNumber(0, 36);
-        }
-        else if (choice == 2) bet.type = "red";
-        else if (choice == 3) bet.type = "black";
-        else if (choice == 4) bet.type = "even";
-        else if (choice == 5) bet.type = "odd";
-
-        int result = spinWheel();
-
-        std::cout << "\nWheel landed on: " << result;
-        if (result != 0) {
-            std::cout << (isRed(result) ? " (Red)\n" : " (Black)\n");
-        } else {
-            std::cout << " (Green)\n";
-        }
-
-        bool win = false;
-
-        if (bet.type == "number") {
-            win = (bet.number == result);
-            if (win) {
-                double payout = bet.amount * 36;
-                player.addWinnings(payout);
-                std::cout << "You hit the number! Won $" << payout << "\n";
-            }
-        }
-        else if (result != 0) {
-            if (bet.type == "red") win = isRed(result);
-            else if (bet.type == "black") win = !isRed(result);
-            else if (bet.type == "even") win = (result % 2 == 0);
-            else if (bet.type == "odd") win = (result % 2 == 1);
-
-            if (win) {
-                double payout = bet.amount * 2;
-                player.addWinnings(payout);
-                std::cout << "You win! Won $" << payout << "\n";
-            }
-        }
-
-        if (!win) {
-            std::cout << "You lose $" << bet.amount << "\n";
-        }
-
-        std::cout << "Current Balance: $" << player.getBalance() << "\n";
-
-        std::cout << "\nPlay again? (1 = Yes, 0 = No): ";
-        int again = getValidatedNumber(0, 1);
-        if (again == 0) break;
+std::string Roulette::betTypeToString(BetType type)
+{
+    switch (type)
+    {
+    case BetType::Number:
+        return "Number";
+    case BetType::Red:
+        return "Red";
+    case BetType::Black:
+        return "Black";
+    case BetType::Even:
+        return "Even";
+    case BetType::Odd:
+        return "Odd";
     }
+
+    return "Unknown";
+}
+
+std::string Roulette::pocketColorToString(PocketColor color)
+{
+    switch (color)
+    {
+    case PocketColor::Green:
+        return "Green";
+    case PocketColor::Red:
+        return "Red";
+    case PocketColor::Black:
+        return "Black";
+    }
+
+    return "Unknown";
 }
