@@ -32,3 +32,4 @@ Release/
 *.exe
 *.dll
 CasinoUI/CasinoUI.vcxproj
+CasinoUI/assets/
