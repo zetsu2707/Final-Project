@@ -10,6 +10,7 @@
 #include "HorseRace.h"
 #include "UIHeaders/HorseRaceUI.h"
 #include "Roulette.h"
+#include "UIheaders/RouletteUI.h"
 #include "Poker.h"
 #include "UIheaders/PokerUI.h"
 #include "Audio.h"
@@ -494,11 +495,10 @@ void CasinoGameUI::handleMouseClick(const sf::Event& event, sf::RenderWindow& wi
     if (m_rouletteCard.isClicked(event, window))
     {
         m_audio.playSound("button");
-        Roulette roulette;
-        roulette.play(m_player);
+        RouletteUI rouletteUI(m_player, m_audio);
+        rouletteUI.run(window);
         refreshPlayerStats();
-        checkEndCondition();
-        m_status.setString("Finished Roulette.");
+        m_status.setString("Returned from Roulette.");
         return;
     }
 

@@ -20,7 +20,8 @@ int main()
     audio.loadSound("card", "assets/sound/effects/card.wav");
     audio.loadSound("lose", "assets/sound/effects/lose.wav");
     audio.loadSound("hakariwin", "assets/sound/effects/hakariwin.wav");
-    //audio.loadSound("card", "assets/card_deal.wav");
+    audio.loadSound("roulette_spin", "assets/sound/effects/roulette_spin.wav");
+    audio.loadSound("roulette_chip", "assets/sound/effects/roulette_chip.wav");
 
 	// Background music
     audio.playMusicFadeIn("assets/sound/background/main_track.wav", 3.0f, true, 15.f);
