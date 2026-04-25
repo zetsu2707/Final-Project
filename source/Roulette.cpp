@@ -1,12 +1,11 @@
 // Roulette minigame implementation file.
-// Related Files: Roulette.h, Player.h
+// Related Files: Roulette.h, CasinoGame.h
 // Date Created: 3/29/2026
-// Last Edited: 04/21/2026
+// Last Edited: 4/24/2026
 
 #include "Roulette.h"
 
 Roulette::Roulette()
-    : m_rng(std::random_device{}())
 {
 }
 
@@ -90,6 +89,7 @@ Roulette::RoundOutcome Roulette::playRound(Player& player, const BetRequest& bet
 {
     RoundOutcome outcome{};
     outcome.betAmount = bet.amount;
+    m_lastOutcomeWon = false;
 
     if (!canPlaceBet(player, bet))
     {
@@ -124,6 +124,7 @@ Roulette::RoundOutcome Roulette::playRound(Player& player, const BetRequest& bet
         }
 
         player.addWinnings(outcome.payout);
+        m_lastOutcomeWon = true;
     }
     else
     {
@@ -139,18 +140,12 @@ std::string Roulette::betTypeToString(BetType type)
 {
     switch (type)
     {
-    case BetType::Number:
-        return "Number";
-    case BetType::Red:
-        return "Red";
-    case BetType::Black:
-        return "Black";
-    case BetType::Even:
-        return "Even";
-    case BetType::Odd:
-        return "Odd";
+    case BetType::Number: return "Number";
+    case BetType::Red:    return "Red";
+    case BetType::Black:  return "Black";
+    case BetType::Even:   return "Even";
+    case BetType::Odd:    return "Odd";
     }
-
     return "Unknown";
 }
 
@@ -158,13 +153,9 @@ std::string Roulette::pocketColorToString(PocketColor color)
 {
     switch (color)
     {
-    case PocketColor::Green:
-        return "Green";
-    case PocketColor::Red:
-        return "Red";
-    case PocketColor::Black:
-        return "Black";
+    case PocketColor::Green: return "Green";
+    case PocketColor::Red:   return "Red";
+    case PocketColor::Black: return "Black";
     }
-
     return "Unknown";
 }

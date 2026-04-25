@@ -1,17 +1,16 @@
 // Header file for Poker minigame/Poker game class.
-// Related Files:
+// Related Files: CardGame.h, Poker.cpp, PokerUI.h
 // Date Created: 3/29/2026
-// Last Edited: 4/19/2026
+// Last Edited: 4/24/2026
 
 #pragma once
 
-#include "Player.h"
+#include "CardGame.h"
 
-#include <random>
 #include <string>
 #include <vector>
 
-class Poker
+class Poker : public CardGame
 {
 public:
     struct CardView
@@ -59,6 +58,9 @@ public:
 
     Poker();
 
+    std::string getName() const override { return "Poker"; }
+    bool didPlayerWin() const override;
+
     void resetRound();
     bool startRound(Player& player, double ante);
 
@@ -90,36 +92,15 @@ public:
     bool isPlayerTurn() const;
 
 private:
-    struct Card
-    {
-        std::string rank;
-        std::string suit;
-        int value;
-    };
-
     class Hand
     {
     public:
-        void addCard(const Card& card);
+        void addCard(const CardGame::Card& card);
         void clear();
-        const std::vector<Card>& getCards() const;
+        const std::vector<CardGame::Card>& getCards() const;
 
     private:
-        std::vector<Card> m_cards;
-    };
-
-    class Deck
-    {
-    public:
-        Deck();
-
-        void reset();
-        void shuffle();
-        Card draw();
-
-    private:
-        std::vector<Card> m_cards;
-        std::mt19937 m_rng;
+        std::vector<CardGame::Card> m_cards;
     };
 
     enum class HandRank
@@ -151,6 +132,7 @@ private:
         std::string bestHandText;
     };
 
+    void buildPokerDeck();
     void dealHoleCards();
 
     void beginPhase(Phase phase);
@@ -163,10 +145,10 @@ private:
     void resolveOpponentsFacingPlayerBet(Player& player);
     void maybeAwardPotIfEveryoneFolded(Player& player);
 
-    std::vector<Card> buildCombinedCards(const Hand& holeCards) const;
+    std::vector<CardGame::Card> buildCombinedCards(const Hand& holeCards) const;
 
-    EvaluatedHand evaluateBestHand(const std::vector<Card>& cards) const;
-    EvaluatedHand evaluateFiveCardHand(const std::vector<Card>& cards) const;
+    EvaluatedHand evaluateBestHand(const std::vector<CardGame::Card>& cards) const;
+    EvaluatedHand evaluateFiveCardHand(const std::vector<CardGame::Card>& cards) const;
     static bool isBetterHand(const EvaluatedHand& left, const EvaluatedHand& right);
     static bool isEqualHand(const EvaluatedHand& left, const EvaluatedHand& right);
     static std::string handRankToString(HandRank rank);
@@ -182,14 +164,11 @@ private:
     void settlePlayerWin(Player& player, const std::string& statusText);
     void settleShowdown(Player& player);
 
-    std::vector<CardView> toCardViews(const std::vector<Card>& cards) const;
-
-    Deck m_deck;
-    std::mt19937 m_rng;
+    std::vector<CardView> toCardViews(const std::vector<CardGame::Card>& cards) const;
 
     Hand m_playerHand;
     std::vector<Opponent> m_opponents;
-    std::vector<Card> m_communityCards;
+    std::vector<CardGame::Card> m_communityCards;
 
     double m_ante;
     double m_pot;

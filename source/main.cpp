@@ -22,6 +22,7 @@ int main()
     audio.loadSound("hakariwin", "assets/sound/effects/hakariwin.wav");
     audio.loadSound("roulette_spin", "assets/sound/effects/roulette_spin.wav");
     audio.loadSound("roulette_chip", "assets/sound/effects/roulette_chip.wav");
+    audio.loadSound("jackpot", "assets/sound/effects/jackpot.mp3");
 
 	// Background music
     audio.playMusicFadeIn("assets/sound/background/main_track.wav", 3.0f, true, 15.f);

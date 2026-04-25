@@ -1,14 +1,7 @@
 // Description: Implementation file for the Slots game class.
-// Related Files:
+// Related Files: Slots.h, CasinoGame.h, SlotsUI.h
 // Date Created: 3/29/2026
-// Last Edited: 3/29/2026
-
-#include"Slots.h"
-
-// Description: Implementation file for the Slots game class.
-// Related Files: Slots.h, Player.h, SlotsUI.h
-// Date Created: 3/29/2026
-// Last Edited: 4/13/2026
+// Last Edited: 4/24/2026
 
 #include "Slots.h"
 #include <iostream>
@@ -21,8 +14,6 @@
 // ─────────────────────────────────────────
 
 Slots::Slots() {
-    std::random_device rd;
-    m_rng.seed(rd());
     initializeSymbols();
 }
 
@@ -33,12 +24,12 @@ Slots::Slots() {
 void Slots::initializeSymbols() {
     // display, weight (higher = more common), multiplier
     m_symbols = {
-        { "Cherry",     40, 2.0  },
-        { "Lemon",      30, 3.0  },
-        { "Orange",     20, 5.0  },
-        { "Grapes",     15, 8.0  },
-        { "Watermelon", 10, 15.0 },
-        { "Star",        5, 50.0 },
+        { "Cherry",     30, 5.5  },
+        { "Lemon",      22, 14.0  },
+        { "Orange",     18, 25.0  },
+        { "Grapes",     14, 55.0  },
+        { "Watermelon", 10, 150.0 },
+        { "Star",        6, 700.0 },
     };
 }
 

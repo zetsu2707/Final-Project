@@ -1,17 +1,16 @@
 // Header file for Roulette minigame/Roulette game class.
-// Related Files: Roulette.cpp, Player.h
+// Related Files: Roulette.cpp, CasinoGame.h
 // Date Created: 3/29/2026
-// Last Edited: 04/21/2026
+// Last Edited: 4/24/2026
 
 #pragma once
 
-#include "Player.h"
+#include "CasinoGame.h"
 
 #include <array>
-#include <random>
 #include <string>
 
-class Roulette
+class Roulette : public CasinoGame
 {
 public:
     enum class BetType
@@ -54,6 +53,9 @@ public:
 
     Roulette();
 
+    std::string getName() const override { return "Roulette"; }
+    bool didPlayerWin() const override { return m_lastOutcomeWon; }
+
     bool canPlaceBet(const Player& player, const BetRequest& bet) const;
     RoundOutcome playRound(Player& player, const BetRequest& bet);
 
@@ -78,5 +80,5 @@ private:
     PocketColor getPocketColor(int number) const;
     bool isWinningBet(const BetRequest& bet, int winningNumber) const;
 
-    std::mt19937 m_rng;
+    bool m_lastOutcomeWon = false;
 };

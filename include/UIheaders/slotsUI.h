@@ -6,6 +6,7 @@
 #pragma once
 
 #include <SFML/Graphics.hpp>
+#include <array>
 #include <string>
 #include <vector>
 
@@ -93,12 +94,16 @@ private:
 
     // Reel spin animation
     float m_spinTimer;
-    static constexpr float SpinDuration = 0.9f; // seconds of "spinning" visual
+    static constexpr float SpinDuration = 0.9f;
+
+    std::array<std::size_t, 3> m_spinIndices = {};
+    sf::Clock                  m_spinFrameClock;
 
     sf::Font m_font;
 
-    sf::Texture m_backgroundTexture;
-    sf::Sprite  m_backgroundSprite;
+    sf::Texture              m_backgroundTexture;
+    sf::Sprite               m_backgroundSprite;
+    std::vector<sf::Texture> m_symbolTextures;  // indexed same as Slots::getSymbols()
 
     sf::Text m_title;
     sf::Text m_balanceText;

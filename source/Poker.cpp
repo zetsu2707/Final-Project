@@ -1,7 +1,7 @@
 // Description: Implementation file for the Poker game class.
-// Related Files:
+// Related Files: Poker.h, CardGame.h
 // Date Created: 3/29/2026
-// Last Edited: 4/19/2026
+// Last Edited: 4/24/2026
 
 #include "Poker.h"
 
@@ -22,7 +22,9 @@ namespace
     }
 }
 
-void Poker::Hand::addCard(const Card& card)
+// ── Hand ──────────────────────────────────────────────────────────────────────
+
+void Poker::Hand::addCard(const CardGame::Card& card)
 {
     m_cards.push_back(card);
 }
@@ -32,61 +34,16 @@ void Poker::Hand::clear()
     m_cards.clear();
 }
 
-const std::vector<Poker::Card>& Poker::Hand::getCards() const
+const std::vector<CardGame::Card>& Poker::Hand::getCards() const
 {
     return m_cards;
 }
 
-Poker::Deck::Deck()
-    : m_rng(std::random_device{}())
-{
-    reset();
-}
-
-void Poker::Deck::reset()
-{
-    m_cards.clear();
-
-    const std::vector<std::string> suits = {
-        "Hearts", "Diamonds", "Clubs", "Spades"
-    };
-
-    const std::vector<std::pair<std::string, int>> ranks = {
-        {"2", 2}, {"3", 3}, {"4", 4}, {"5", 5}, {"6", 6},
-        {"7", 7}, {"8", 8}, {"9", 9}, {"10", 10},
-        {"Jack", 11}, {"Queen", 12}, {"King", 13}, {"Ace", 14}
-    };
-
-    for (const std::string& suit : suits)
-    {
-        for (const auto& [rank, value] : ranks)
-        {
-            m_cards.push_back({ rank, suit, value });
-        }
-    }
-
-    shuffle();
-}
-
-void Poker::Deck::shuffle()
-{
-    std::shuffle(m_cards.begin(), m_cards.end(), m_rng);
-}
-
-Poker::Card Poker::Deck::draw()
-{
-    if (m_cards.empty())
-        reset();
-
-    Card card = m_cards.back();
-    m_cards.pop_back();
-    return card;
-}
+// ── Poker ─────────────────────────────────────────────────────────────────────
 
 Poker::Poker()
-    : m_rng(std::random_device{}()),
-    m_opponents({
-        Opponent{ "Dealer Dan", {}, false, 0.0, 0.0, "" },
+    : m_opponents({
+        Opponent{ "Dealer Dan",   {}, false, 0.0, 0.0, "" },
         Opponent{ "Reckless Roy", {}, false, 0.0, 0.0, "" },
         Opponent{ "Careful Carl", {}, false, 0.0, 0.0, "" }
         }),
@@ -105,9 +62,32 @@ Poker::Poker()
 {
 }
 
+// Fills the inherited m_deck with poker-specific rank values
+// (J=11, Q=12, K=13, A=14) and shuffles using the inherited m_rng.
+void Poker::buildPokerDeck()
+{
+    const std::vector<std::string> suits = {
+        "Hearts", "Diamonds", "Clubs", "Spades"
+    };
+
+    const std::vector<std::pair<std::string, int>> ranks = {
+        {"2", 2}, {"3", 3}, {"4", 4}, {"5", 5}, {"6", 6},
+        {"7", 7}, {"8", 8}, {"9", 9}, {"10", 10},
+        {"Jack", 11}, {"Queen", 12}, {"King", 13}, {"Ace", 14}
+    };
+
+    m_deck.clear();
+
+    for (const std::string& suit : suits)
+        for (const auto& [rank, value] : ranks)
+            m_deck.push_back({ rank, suit, value });
+
+    shuffleDeck();
+}
+
 void Poker::resetRound()
 {
-    m_deck.reset();
+    buildPokerDeck();
     m_playerHand.clear();
     m_communityCards.clear();
 
@@ -155,7 +135,7 @@ bool Poker::startRound(Player& player, double ante)
         return false;
     }
 
-    m_deck.reset();
+    buildPokerDeck();
     m_playerHand.clear();
     m_communityCards.clear();
 
@@ -186,14 +166,20 @@ bool Poker::startRound(Player& player, double ante)
     return true;
 }
 
+bool Poker::didPlayerWin() const
+{
+    return m_roundResult == RoundResult::PlayerWin ||
+           m_roundResult == RoundResult::SplitPot;
+}
+
 void Poker::dealHoleCards()
 {
     for (int cardIndex = 0; cardIndex < 2; ++cardIndex)
     {
-        m_playerHand.addCard(m_deck.draw());
+        m_playerHand.addCard(drawCard());
 
         for (Opponent& opponent : m_opponents)
-            opponent.hand.addCard(m_deck.draw());
+            opponent.hand.addCard(drawCard());
     }
 }
 
@@ -212,17 +198,17 @@ void Poker::beginPhase(Phase phase)
 void Poker::dealFlop()
 {
     for (int i = 0; i < 3; ++i)
-        m_communityCards.push_back(m_deck.draw());
+        m_communityCards.push_back(drawCard());
 }
 
 void Poker::dealTurn()
 {
-    m_communityCards.push_back(m_deck.draw());
+    m_communityCards.push_back(drawCard());
 }
 
 void Poker::dealRiver()
 {
-    m_communityCards.push_back(m_deck.draw());
+    m_communityCards.push_back(drawCard());
 }
 
 void Poker::advanceToNextPhase(Player& player, const std::string& prefixStatus)
@@ -453,7 +439,7 @@ void Poker::maybeAwardPotIfEveryoneFolded(Player& player)
 
 int Poker::estimateOpponentStrength(const Opponent& opponent) const
 {
-    std::vector<Card> combined = buildCombinedCards(opponent.hand);
+    std::vector<CardGame::Card> combined = buildCombinedCards(opponent.hand);
     const EvaluatedHand evaluated = evaluateBestHand(combined);
 
     int score = static_cast<int>(evaluated.rank) * 25;
@@ -521,22 +507,13 @@ double Poker::chooseOpponentBetSize() const
 
     switch (m_phase)
     {
-    case Phase::PreFlop:
-        return base;
-
-    case Phase::Flop:
-        return base * 1.25;
-
-    case Phase::Turn:
-        return base * 1.5;
-
-    case Phase::River:
-        return base * 2.0;
-
+    case Phase::PreFlop:  return base;
+    case Phase::Flop:     return base * 1.25;
+    case Phase::Turn:     return base * 1.5;
+    case Phase::River:    return base * 2.0;
     case Phase::Showdown:
     case Phase::None:
-    default:
-        return base;
+    default:              return base;
     }
 }
 
@@ -633,10 +610,8 @@ void Poker::settleShowdown(Player& player)
             {
                 if (i > 0)
                     m_winningSummaryText += (i + 1 == winners.size()) ? " and " : ", ";
-
                 m_winningSummaryText += winners[i];
             }
-
             m_winningSummaryText += ". Your share: $" + formatMoney(playerShare) + ".";
         }
     }
@@ -646,14 +621,12 @@ void Poker::settleShowdown(Player& player)
         m_winningSummaryText = "Winner";
         if (winners.size() > 1)
             m_winningSummaryText += "s";
-
         m_winningSummaryText += ": ";
 
         for (std::size_t i = 0; i < winners.size(); ++i)
         {
             if (i > 0)
                 m_winningSummaryText += (i + 1 == winners.size()) ? " and " : ", ";
-
             m_winningSummaryText += winners[i];
         }
 
@@ -664,14 +637,14 @@ void Poker::settleShowdown(Player& player)
     m_roundState = RoundState::RoundOver;
 }
 
-std::vector<Poker::Card> Poker::buildCombinedCards(const Hand& holeCards) const
+std::vector<CardGame::Card> Poker::buildCombinedCards(const Hand& holeCards) const
 {
-    std::vector<Card> cards = holeCards.getCards();
+    std::vector<CardGame::Card> cards = holeCards.getCards();
     cards.insert(cards.end(), m_communityCards.begin(), m_communityCards.end());
     return cards;
 }
 
-Poker::EvaluatedHand Poker::evaluateBestHand(const std::vector<Card>& cards) const
+Poker::EvaluatedHand Poker::evaluateBestHand(const std::vector<CardGame::Card>& cards) const
 {
     if (cards.size() < 5)
         return { HandRank::HighCard, {} };
@@ -679,32 +652,23 @@ Poker::EvaluatedHand Poker::evaluateBestHand(const std::vector<Card>& cards) con
     EvaluatedHand best = { HandRank::HighCard, {0, 0, 0, 0, 0} };
 
     for (std::size_t a = 0; a < cards.size() - 4; ++a)
-    {
         for (std::size_t b = a + 1; b < cards.size() - 3; ++b)
-        {
             for (std::size_t c = b + 1; c < cards.size() - 2; ++c)
-            {
                 for (std::size_t d = c + 1; d < cards.size() - 1; ++d)
-                {
                     for (std::size_t e = d + 1; e < cards.size(); ++e)
                     {
-                        std::vector<Card> hand = {
+                        std::vector<CardGame::Card> hand = {
                             cards[a], cards[b], cards[c], cards[d], cards[e]
                         };
-
                         const EvaluatedHand candidate = evaluateFiveCardHand(hand);
                         if (isBetterHand(candidate, best))
                             best = candidate;
                     }
-                }
-            }
-        }
-    }
 
     return best;
 }
 
-Poker::EvaluatedHand Poker::evaluateFiveCardHand(const std::vector<Card>& cards) const
+Poker::EvaluatedHand Poker::evaluateFiveCardHand(const std::vector<CardGame::Card>& cards) const
 {
     std::vector<int> values;
     values.reserve(cards.size());
@@ -712,7 +676,7 @@ Poker::EvaluatedHand Poker::evaluateFiveCardHand(const std::vector<Card>& cards)
     std::unordered_map<int, int> rankCounts;
     std::unordered_map<std::string, int> suitCounts;
 
-    for (const Card& card : cards)
+    for (const CardGame::Card& card : cards)
     {
         values.push_back(card.value);
         rankCounts[card.value]++;
@@ -743,7 +707,7 @@ Poker::EvaluatedHand Poker::evaluateFiveCardHand(const std::vector<Card>& cards)
 
     for (std::size_t i = 0; i + 4 < straightValues.size(); ++i)
     {
-        if (straightValues[i] - 1 == straightValues[i + 1] &&
+        if (straightValues[i]     - 1 == straightValues[i + 1] &&
             straightValues[i + 1] - 1 == straightValues[i + 2] &&
             straightValues[i + 2] - 1 == straightValues[i + 3] &&
             straightValues[i + 3] - 1 == straightValues[i + 4])
@@ -772,11 +736,7 @@ Poker::EvaluatedHand Poker::evaluateFiveCardHand(const std::vector<Card>& cards)
         return { HandRank::StraightFlush, {straightHigh} };
 
     if (groups[0].first == 4)
-    {
-        const int quadValue = groups[0].second;
-        const int kicker = groups[1].second;
-        return { HandRank::FourOfAKind, {quadValue, kicker} };
-    }
+        return { HandRank::FourOfAKind, {groups[0].second, groups[1].second} };
 
     if (groups[0].first == 3 && groups[1].first == 2)
         return { HandRank::FullHouse, {groups[0].second, groups[1].second} };
@@ -790,35 +750,26 @@ Poker::EvaluatedHand Poker::evaluateFiveCardHand(const std::vector<Card>& cards)
     if (groups[0].first == 3)
     {
         std::vector<int> tieBreakers = { groups[0].second };
-
         for (const auto& group : groups)
-        {
             if (group.first == 1)
                 tieBreakers.push_back(group.second);
-        }
-
         return { HandRank::ThreeOfAKind, tieBreakers };
     }
 
     if (groups[0].first == 2 && groups[1].first == 2)
     {
-        const int topPair = std::max(groups[0].second, groups[1].second);
-        const int lowerPair = std::min(groups[0].second, groups[1].second);
-        const int kicker = groups.size() > 2 ? groups[2].second : 0;
-
+        const int topPair    = std::max(groups[0].second, groups[1].second);
+        const int lowerPair  = std::min(groups[0].second, groups[1].second);
+        const int kicker     = groups.size() > 2 ? groups[2].second : 0;
         return { HandRank::TwoPair, {topPair, lowerPair, kicker} };
     }
 
     if (groups[0].first == 2)
     {
         std::vector<int> tieBreakers = { groups[0].second };
-
         for (const auto& group : groups)
-        {
             if (group.first == 1)
                 tieBreakers.push_back(group.second);
-        }
-
         std::sort(tieBreakers.begin() + 1, tieBreakers.end(), std::greater<int>());
         return { HandRank::OnePair, tieBreakers };
     }
@@ -830,7 +781,6 @@ bool Poker::isBetterHand(const EvaluatedHand& left, const EvaluatedHand& right)
 {
     if (left.rank != right.rank)
         return static_cast<int>(left.rank) > static_cast<int>(right.rank);
-
     return left.tieBreakers > right.tieBreakers;
 }
 
@@ -870,117 +820,48 @@ std::string Poker::phaseToString(Phase phase)
     }
 }
 
-std::vector<Poker::CardView> Poker::toCardViews(const std::vector<Card>& cards) const
+std::vector<Poker::CardView> Poker::toCardViews(const std::vector<CardGame::Card>& cards) const
 {
     std::vector<CardView> views;
     views.reserve(cards.size());
-
-    for (const Card& card : cards)
+    for (const CardGame::Card& card : cards)
         views.push_back({ card.rank, card.suit, card.value });
-
     return views;
 }
 
-Poker::RoundState Poker::getRoundState() const
-{
-    return m_roundState;
-}
+Poker::RoundState   Poker::getRoundState()  const { return m_roundState; }
+Poker::Phase        Poker::getPhase()       const { return m_phase; }
+Poker::RoundResult  Poker::getRoundResult() const { return m_roundResult; }
 
-Poker::Phase Poker::getPhase() const
-{
-    return m_phase;
-}
-
-Poker::RoundResult Poker::getRoundResult() const
-{
-    return m_roundResult;
-}
-
-std::vector<Poker::CardView> Poker::getPlayerCards() const
-{
-    return toCardViews(m_playerHand.getCards());
-}
-
-std::vector<Poker::CardView> Poker::getCommunityCards() const
-{
-    return toCardViews(m_communityCards);
-}
+std::vector<Poker::CardView> Poker::getPlayerCards()    const { return toCardViews(m_playerHand.getCards()); }
+std::vector<Poker::CardView> Poker::getCommunityCards() const { return toCardViews(m_communityCards); }
 
 std::vector<Poker::OpponentView> Poker::getOpponents() const
 {
     std::vector<OpponentView> views;
     views.reserve(m_opponents.size());
-
     for (const Opponent& opponent : m_opponents)
-    {
         views.push_back({
             opponent.name,
             toCardViews(opponent.hand.getCards()),
             opponent.folded,
             opponent.contribution,
             opponent.bestHandText
-            });
-    }
-
+        });
     return views;
 }
 
-double Poker::getAnte() const
-{
-    return m_ante;
-}
+double Poker::getAnte()               const { return m_ante; }
+double Poker::getPot()                const { return m_pot; }
+double Poker::getCurrentBet()         const { return m_currentBet; }
+double Poker::getAmountToCall()       const { return std::max(0.0, m_currentBet - m_playerContribution); }
+double Poker::getPlayerContribution() const { return m_playerContribution; }
 
-double Poker::getPot() const
-{
-    return m_pot;
-}
+std::string Poker::getStatusText()         const { return m_statusText; }
+std::string Poker::getPhaseText()          const { return phaseToString(m_phase); }
+std::string Poker::getPlayerBestHandText() const { return m_playerBestHandText; }
+std::string Poker::getWinningSummaryText() const { return m_winningSummaryText; }
 
-double Poker::getCurrentBet() const
-{
-    return m_currentBet;
-}
-
-double Poker::getAmountToCall() const
-{
-    return std::max(0.0, m_currentBet - m_playerContribution);
-}
-
-double Poker::getPlayerContribution() const
-{
-    return m_playerContribution;
-}
-
-std::string Poker::getStatusText() const
-{
-    return m_statusText;
-}
-
-std::string Poker::getPhaseText() const
-{
-    return phaseToString(m_phase);
-}
-
-std::string Poker::getPlayerBestHandText() const
-{
-    return m_playerBestHandText;
-}
-
-std::string Poker::getWinningSummaryText() const
-{
-    return m_winningSummaryText;
-}
-
-bool Poker::isRoundOver() const
-{
-    return m_roundState == RoundState::RoundOver;
-}
-
-bool Poker::areOpponentHoleCardsHidden() const
-{
-    return m_hideOpponentHoleCards;
-}
-
-bool Poker::isPlayerTurn() const
-{
-    return m_roundState == RoundState::PlayerTurn;
-}
+bool Poker::isRoundOver()              const { return m_roundState == RoundState::RoundOver; }
+bool Poker::areOpponentHoleCardsHidden() const { return m_hideOpponentHoleCards; }
+bool Poker::isPlayerTurn()             const { return m_roundState == RoundState::PlayerTurn; }

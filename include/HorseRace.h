@@ -1,19 +1,21 @@
 // Header file for Horse Racing minigame/Horse Racing game class.
-// Related Files: HorseRace.cpp, Player.h
+// Related Files: HorseRace.cpp, CasinoGame.h
 // Date Created: 3/29/2026
-// Last Edited: 4/10/2026
+// Last Edited: 4/24/2026
 
 #pragma once
-#include "Player.h"
+#include "CasinoGame.h"
 
 #include <array>
-#include <random>
 #include <string>
 #include <vector>
 
-class HorseRacing {
+class HorseRacing : public CasinoGame {
 public:
     HorseRacing();
+
+    std::string getName() const override { return "Horse Racing"; }
+    bool didPlayerWin() const override { return m_lastBetWon; }
 
     static constexpr int HorseCount = 8;
     static constexpr int RacePhaseCount = 5;
@@ -58,7 +60,6 @@ public:
 
 private:
     std::array<Horse, HorseCount> m_horses;
-    std::mt19937 m_rng;
 
     RaceState m_raceState;
     bool m_lastBetWon = false;

@@ -1,11 +1,9 @@
 // Blackjack minigame implementation file.
-// Related Files: Blackjack.h, Player.h, BlackjackUI.h
+// Related Files: Blackjack.h, CardGame.h, BlackjackUI.h
 // Date Created: 3/29/2026
-// Last Edited: 4/12/2026
+// Last Edited: 4/24/2026
 
 #include "Blackjack.h"
-
-#include <algorithm>
 
 Blackjack::Blackjack()
     : m_currentBet(0.0),
@@ -14,11 +12,12 @@ Blackjack::Blackjack()
     m_statusText("Enter your bet and press Deal."),
     m_hideDealerHoleCard(true)
 {
+    resetDeck(CardGame::DeckStyle::Long);
 }
 
 void Blackjack::resetRound()
 {
-    m_deck.reset();
+    resetDeck(CardGame::DeckStyle::Long);
     m_playerHand.clearHand();
     m_dealerHand.clearHand();
 
@@ -49,7 +48,7 @@ bool Blackjack::startRound(Player& player, double bet)
         return false;
     }
 
-    m_deck.reset();
+    resetDeck(CardGame::DeckStyle::Long);
     m_playerHand.clearHand();
     m_dealerHand.clearHand();
 
@@ -59,10 +58,10 @@ bool Blackjack::startRound(Player& player, double bet)
     m_hideDealerHoleCard = true;
     m_statusText = "Your turn. Hit or Stand.";
 
-    m_playerHand.hit(m_deck);
-    m_dealerHand.hit(m_deck);
-    m_playerHand.hit(m_deck);
-    m_dealerHand.hit(m_deck);
+    m_playerHand.hit(*this);
+    m_dealerHand.hit(*this);
+    m_playerHand.hit(*this);
+    m_dealerHand.hit(*this);
 
     const int playerValue = m_playerHand.getHandValue();
     const int dealerValue = m_dealerHand.getHandValue();
@@ -91,7 +90,7 @@ void Blackjack::playerHit(Player& player)
     if (m_roundState != RoundState::PlayerTurn)
         return;
 
-    m_playerHand.hit(m_deck);
+    m_playerHand.hit(*this);
 
     const int playerValue = m_playerHand.getHandValue();
 
@@ -119,7 +118,7 @@ void Blackjack::playerStand(Player& player)
     m_roundState = RoundState::DealerTurn;
     m_hideDealerHoleCard = false;
 
-    m_dealerHand.takeTurn(m_deck);
+    m_dealerHand.takeTurn(*this);
 
     const int playerValue = m_playerHand.getHandValue();
     const int dealerValue = m_dealerHand.getHandValue();
@@ -171,7 +170,7 @@ int Blackjack::getDealerVisibleValue() const
     if (!m_hideDealerHoleCard)
         return m_dealerHand.getHandValue();
 
-    const std::vector<Card>& cards = m_dealerHand.getHand().getCards();
+    const std::vector<CardGame::Card>& cards = m_dealerHand.getHand().getCards();
 
     if (cards.size() <= 1)
         return 0;
@@ -220,7 +219,16 @@ bool Blackjack::isPlayerTurn() const
     return m_roundState == RoundState::PlayerTurn;
 }
 
-void Blackjack::Hand::addCard(const Card& card)
+bool Blackjack::didPlayerWin() const
+{
+    return m_roundResult == RoundResult::PlayerBlackjack ||
+           m_roundResult == RoundResult::DealerBust      ||
+           m_roundResult == RoundResult::PlayerWin;
+}
+
+// ── Hand ─────────────────────────────────────────────────────────────────────
+
+void Blackjack::Hand::addCard(const CardGame::Card& card)
 {
     m_cards.push_back(card);
 }
@@ -228,9 +236,9 @@ void Blackjack::Hand::addCard(const Card& card)
 int Blackjack::Hand::getValue() const
 {
     int total = 0;
-    int aces = 0;
+    int aces  = 0;
 
-    for (const Card& card : m_cards)
+    for (const CardGame::Card& card : m_cards)
     {
         total += card.value;
         if (card.value == 11)
@@ -251,57 +259,16 @@ void Blackjack::Hand::clear()
     m_cards.clear();
 }
 
-const std::vector<Blackjack::Card>& Blackjack::Hand::getCards() const
+const std::vector<CardGame::Card>& Blackjack::Hand::getCards() const
 {
     return m_cards;
 }
 
-Blackjack::Deck::Deck()
-    : m_rng(std::random_device{}())
+// ── Participant ───────────────────────────────────────────────────────────────
+
+void Blackjack::Participant::hit(Blackjack& game)
 {
-    reset();
-}
-
-void Blackjack::Deck::reset()
-{
-    m_cards.clear();
-
-    const std::vector<std::string> suits = { "Hearts", "Diamonds", "Clubs", "Spades" };
-    const std::vector<std::pair<std::string, int>> ranks = {
-        {"2", 2}, {"3", 3}, {"4", 4}, {"5", 5}, {"6", 6},
-        {"7", 7}, {"8", 8}, {"9", 9}, {"10", 10},
-        {"Jack", 10}, {"Queen", 10}, {"King", 10}, {"Ace", 11}
-    };
-
-    for (const std::string& suit : suits)
-    {
-        for (const auto& rank : ranks)
-        {
-            m_cards.push_back({ rank.first, suit, rank.second });
-        }
-    }
-
-    shuffle();
-}
-
-void Blackjack::Deck::shuffle()
-{
-    std::shuffle(m_cards.begin(), m_cards.end(), m_rng);
-}
-
-Blackjack::Card Blackjack::Deck::draw()
-{
-    if (m_cards.empty())
-        reset();
-
-    Card card = m_cards.back();
-    m_cards.pop_back();
-    return card;
-}
-
-void Blackjack::Participant::hit(Deck& deck)
-{
-    m_hand.addCard(deck.draw());
+    m_hand.addCard(game.drawCard());
 }
 
 int Blackjack::Participant::getHandValue() const
@@ -319,17 +286,20 @@ void Blackjack::Participant::clearHand()
     m_hand.clear();
 }
 
-void Blackjack::BJPlayer::takeTurn(Deck&)
+void Blackjack::BJPlayer::takeTurn(Blackjack&)
 {
+    // Player turn is handled externally via playerHit/playerStand.
 }
 
-void Blackjack::Dealer::takeTurn(Deck& deck)
+void Blackjack::Dealer::takeTurn(Blackjack& game)
 {
     while (getHandValue() < 17)
     {
-        hit(deck);
+        hit(game);
     }
 }
+
+// ── Results ───────────────────────────────────────────────────────────────────
 
 void Blackjack::settleRound(Player& player)
 {
@@ -381,7 +351,7 @@ std::vector<Blackjack::CardView> Blackjack::toCardViews(const Hand& hand) const
     std::vector<CardView> cards;
     cards.reserve(hand.getCards().size());
 
-    for (const Card& card : hand.getCards())
+    for (const CardGame::Card& card : hand.getCards())
     {
         cards.push_back({ card.rank, card.suit, card.value });
     }

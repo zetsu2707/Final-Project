@@ -1,7 +1,7 @@
 // Header file for MainUI start menu/controller class.
 // Related Files: MainUI.cpp, Player.h, CasinoGameUI.h
 // Date Created: 4/7/2026
-// Last Edited: 4/20/2026
+// Last Edited: 4/24/2026
 
 #pragma once
 
@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 #include "Audio.h"
+#include "Player.h"
 
 class MainUI
 {
@@ -33,8 +34,7 @@ private:
     enum class ActiveField
     {
         None,
-        NewGameName,
-        LoadFilename
+        NewGameName
     };
 
     struct Button
@@ -47,6 +47,7 @@ private:
             sf::Vector2f position,
             sf::Vector2f size);
 
+        void setLabel(const sf::Font& font, const std::string& label);
         bool contains(sf::Vector2f point) const;
         void update(const sf::RenderWindow& window);
         bool isClicked(const sf::Event& event, const sf::RenderWindow& window) const;
@@ -86,8 +87,8 @@ private:
     void handleBackspace();
     void clearFormState();
 
+    void refreshSlotButtons();
     void startNewGame(sf::RenderWindow& window);
-    void startLoadGame(sf::RenderWindow& window);
 
     sf::Font m_font;
 
@@ -95,7 +96,6 @@ private:
     sf::Sprite  m_backgroundSprite;
     sf::Texture m_logoTexture;
     sf::Sprite  m_logoSprite;
-
 
     sf::RectangleShape    m_noteBackground;
     sf::RectangleShape    m_notePaper;
@@ -105,7 +105,6 @@ private:
     sf::Text              m_noteContinuePrompt;
     sf::Clock             m_noteAlphaClock;
     float                 m_noteAlpha = 0.f;
-
 
     sf::Text  m_introTitle;
     sf::Text  m_introSubtitle;
@@ -121,7 +120,6 @@ private:
     sf::Text m_newGameTitle;
     sf::Text m_nameLabel;
     sf::Text m_loadGameTitle;
-    sf::Text m_filenameLabel;
 
     Screen      m_currentScreen;
     ActiveField m_activeField;
@@ -133,8 +131,10 @@ private:
     Button m_exitButton;
     Button m_backButton;
     Button m_createPlayerButton;
-    Button m_loadSaveButton;
 
     InputField m_nameInput;
-    InputField m_filenameInput;
+
+    std::vector<Button> m_slotButtons;  // 10 shared save-slot buttons
+
+    bool m_statsSlotSelected = false;   // true when a stats slot has been loaded
 };

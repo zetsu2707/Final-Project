@@ -87,6 +87,7 @@ private:
 
     bool m_running;
     bool m_betFieldActive;
+    bool m_roundStatsRecorded = false;
 
     sf::Font m_font;
 

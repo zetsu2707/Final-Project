@@ -1,14 +1,13 @@
 // Source file for Horse Racing minigame/Horse Racing game class.
-// Related Files: HorseRace.h, Player.h
+// Related Files: HorseRace.h, CasinoGame.h
 // Date Created: 3/29/2026
-// Last Edited: 4/10/2026
+// Last Edited: 4/24/2026
 
 #include "HorseRace.h"
 
 #include <algorithm>
 
-HorseRacing::HorseRacing()
-    : m_rng(std::random_device{}()) {
+HorseRacing::HorseRacing() {
     initializeHorses();
     resetRaceData();
 }
@@ -111,7 +110,6 @@ double HorseRacing::getHorseProgress(int horseIndex) const {
     if (horseIndex < 0 || horseIndex >= HorseCount) {
         return 0.0;
     }
-
     return m_horses[horseIndex].currentProgress;
 }
 
@@ -127,13 +125,8 @@ double HorseRacing::getLeaderProgress() const {
     return leaderProgress;
 }
 
-bool HorseRacing::isRaceStarted() const {
-    return m_raceState.started;
-}
-
-bool HorseRacing::isRaceFinished() const {
-    return m_raceState.finished;
-}
+bool HorseRacing::isRaceStarted()  const { return m_raceState.started; }
+bool HorseRacing::isRaceFinished() const { return m_raceState.finished; }
 
 bool HorseRacing::isValidHorseChoice(int horseChoice) const {
     return horseChoice >= 1 && horseChoice <= HorseCount;
@@ -147,21 +140,17 @@ bool HorseRacing::resolveBet(Player& player, double betAmount, int horseChoice) 
     m_lastBetWon = false;
     m_lastPayout = 0.0;
 
-    if (!m_raceState.finished) {
+    if (!m_raceState.finished)
         return false;
-    }
 
-    if (!isValidHorseChoice(horseChoice)) {
+    if (!isValidHorseChoice(horseChoice))
         return false;
-    }
 
-    if (!canPlaceBet(player, betAmount)) {
+    if (!canPlaceBet(player, betAmount))
         return false;
-    }
 
-    if (!player.placeBet(betAmount)) {
+    if (!player.placeBet(betAmount))
         return false;
-    }
 
     const std::vector<Horse> results = getRaceResults();
     const Horse& winningHorse = results.front();
@@ -177,10 +166,5 @@ bool HorseRacing::resolveBet(Player& player, double betAmount, int horseChoice) 
     return true;
 }
 
-bool HorseRacing::didPlayerWinLastBet() const {
-    return m_lastBetWon;
-}
-
-double HorseRacing::getLastPayout() const {
-    return m_lastPayout;
-}
+bool HorseRacing::didPlayerWinLastBet() const { return m_lastBetWon; }
+double HorseRacing::getLastPayout()     const { return m_lastPayout; }
