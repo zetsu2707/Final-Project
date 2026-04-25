@@ -301,8 +301,8 @@ RouletteUI::RouletteUI(Player& player, AudioManager& audio)
     m_lastOutcomeText(m_font, "Place a wager to begin.", 24),
     m_helpText(m_font,
         "Payouts:\n"
-        "• Straight number pays 35:1\n"
-        "• Red / Black / Even / Odd pay 1:1\n\n"
+        "ï¿½ Straight number pays 35:1\n"
+        "ï¿½ Red / Black / Even / Odd pay 1:1\n\n"
         "Tip:\n"
         "Choose Number, then enter 0-36.\n"
         "Green 0 beats all even-money bets.",
@@ -603,6 +603,8 @@ void RouletteUI::completeSpinAnimation()
     m_lastOutcome = m_pendingOutcome;
     m_hasLastOutcome = true;
     m_hasPendingOutcome = false;
+
+    m_player.recordGameResult("Roulette", m_lastOutcome.win);
 
     refreshLastSpinTexts();
     refreshPlayerStats();

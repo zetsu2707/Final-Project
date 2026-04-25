@@ -351,10 +351,13 @@ void BlackjackUI::playRoundResultSound()
     if (!m_blackjack.isRoundOver())
         return;
 
-    if (isPlayerWinningResult(m_blackjack.getRoundResult()))
-    {
-        m_audio.playSound("win");
+    if (!m_roundStatsRecorded) {
+        m_player.recordGameResult("Blackjack", isPlayerWinningResult(m_blackjack.getRoundResult()));
+        m_roundStatsRecorded = true;
     }
+
+    if (isPlayerWinningResult(m_blackjack.getRoundResult()))
+        m_audio.playSound("win");
 }
 
 void BlackjackUI::handleBackspace()
@@ -426,6 +429,7 @@ void BlackjackUI::handleMouseClick(const sf::Event& event, sf::RenderWindow& win
         m_betFieldActive = false;
         m_betInput.setActive(false);
 
+        m_roundStatsRecorded = false;
         const bool roundStarted = m_blackjack.startRound(m_player, getParsedBet());
 
         if (roundStarted)

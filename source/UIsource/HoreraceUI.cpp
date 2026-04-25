@@ -468,10 +468,9 @@ void HorseRaceUI::settleBetIfNeeded()
     m_game.resolveBet(*m_player, m_betAmount, m_selectedHorse);
 
     if (m_game.didPlayerWinLastBet())
-    {
         m_audio.playSound("win");
-    }
 
+    m_player->recordGameResult("Horse Race", m_game.didPlayerWinLastBet());
     m_betSettled = true;
     m_screenState = ScreenState::Results;
 }

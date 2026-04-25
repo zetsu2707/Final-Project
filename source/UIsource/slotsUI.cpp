@@ -155,6 +155,18 @@ SlotsUI::SlotsUI(Player& player, AudioManager& audio)
     m_betInput.value = "10";
     m_betInput.syncText();
 
+    // Load symbol textures in same order as Slots::initializeSymbols()
+    const std::vector<std::string> texturePaths = {
+        "assets/slots/slotsCherry.png",
+        "assets/slots/slotsLemon.png",
+        "assets/slots/slotsOrangeg.png",
+        "assets/slots/slotsGrape.png",
+        "assets/slots/slotsWatermelon.png",
+        "assets/slots/slotsStar.png",
+    };
+    for (const auto& path : texturePaths)
+        m_symbolTextures.emplace_back(path);
+
     refreshTexts();
     updateButtonStates();
 }
@@ -212,6 +224,8 @@ void SlotsUI::doSpin()
     m_lastResult = m_slots.spinReels();
     m_state      = SlotState::Spinning;
     m_spinTimer  = 0.f;
+    m_spinIndices = { 0, 2, 4 };  // staggered start per reel
+    m_spinFrameClock.restart();
 
     refreshTexts();
     updateButtonStates();
@@ -281,13 +295,15 @@ void SlotsUI::handleMouseClick(const sf::Event& event, sf::RenderWindow& window)
 
 void SlotsUI::drawReels(sf::RenderWindow& window) const
 {
-    // Three reel boxes centred on screen
-    const float reelW   = 200.f;
-    const float reelH   = 240.f;
-    const float gap     = 40.f;
-    const float totalW  = 3.f * reelW + 2.f * gap;
-    const float startX  = 960.f - totalW / 2.f;
-    const float reelY   = 340.f;
+    const float reelW  = 200.f;
+    const float reelH  = 240.f;
+    const float gap    = 40.f;
+    const float totalW = 3.f * reelW + 2.f * gap;
+    const float startX = 960.f - totalW / 2.f;
+    const float reelY  = 340.f;
+    const float iconSz = 160.f;
+
+    const auto& syms = m_slots.getSymbols();
 
     for (int i = 0; i < 3; ++i)
     {
@@ -301,18 +317,33 @@ void SlotsUI::drawReels(sf::RenderWindow& window) const
         reel.setOutlineThickness(3.f);
         window.draw(reel);
 
-        // Symbol text
-        std::string symText = "?";
-        if (m_state != SlotState::Spinning && !m_lastResult.empty())
-            symText = m_lastResult[static_cast<std::size_t>(i)].display;
+        // Pick which texture to show
+        std::size_t texIdx = m_spinIndices[static_cast<std::size_t>(i)];
 
-        sf::Text sym(m_font, symText, 40);
-        sym.setFillColor(sf::Color::White);
-        const sf::FloatRect sb = sym.getLocalBounds();
-        sym.setOrigin({ sb.position.x + sb.size.x / 2.f,
-                        sb.position.y + sb.size.y / 2.f });
-        sym.setPosition({ x + reelW / 2.f, reelY + reelH / 2.f });
-        window.draw(sym);
+        if (m_state != SlotState::Spinning && !m_lastResult.empty())
+        {
+            const std::string& disp = m_lastResult[static_cast<std::size_t>(i)].display;
+            for (std::size_t j = 0; j < syms.size(); ++j)
+            {
+                if (syms[j].display == disp) { texIdx = j; break; }
+            }
+        }
+
+        if (texIdx < m_symbolTextures.size())
+        {
+            const sf::Texture& tex = m_symbolTextures[texIdx];
+            const sf::Vector2u sz  = tex.getSize();
+            if (sz.x > 0 && sz.y > 0)
+            {
+                sf::Sprite icon(tex);
+                icon.setScale({ iconSz / sz.x, iconSz / sz.y });
+                icon.setPosition({
+                    x + (reelW - iconSz) / 2.f,
+                    reelY + (reelH - iconSz) / 2.f
+                });
+                window.draw(icon);
+            }
+        }
     }
 }
 
@@ -423,7 +454,7 @@ void SlotsUI::draw(sf::RenderWindow& window)
 
 void SlotsUI::run(sf::RenderWindow& window)
 {
-    m_audio.playMusicFadeIn("assets/sound/background/main_track.wav", 1.5f, true, 15.f);
+    m_audio.playMusicFadeIn("assets/sound/background/slots_track.wav", 1.5f, true, 15.f);
 
     sf::Clock frameClock;
 
@@ -435,6 +466,19 @@ void SlotsUI::run(sf::RenderWindow& window)
         // ── Spin animation tick ──────────────────────────────────────────
         if (m_state == SlotState::Spinning)
         {
+            // Cycle each reel icon at ~12 fps, staggered by reel
+            if (m_spinFrameClock.getElapsedTime().asSeconds() >= 0.085f)
+            {
+                const std::size_t n = m_symbolTextures.size();
+                if (n > 0)
+                {
+                    m_spinIndices[0] = (m_spinIndices[0] + 1) % n;
+                    m_spinIndices[1] = (m_spinIndices[1] + 1) % n;
+                    m_spinIndices[2] = (m_spinIndices[2] + 1) % n;
+                }
+                m_spinFrameClock.restart();
+            }
+
             m_spinTimer += dt;
             if (m_spinTimer >= SpinDuration)
             {
@@ -463,9 +507,15 @@ void SlotsUI::run(sf::RenderWindow& window)
                        << "   (" << m_lastResult[0].display << "  x" << m_lastMultiplier << ")";
                     m_resultMessage = ss.str();
                     m_resultColor   = sf::Color(100, 255, 140);
-                    m_audio.playSound("win");
+
+                    const std::string& sym = m_lastResult[0].display;
+                    const bool isJackpot = (sym == "Grapes" ||
+                                            sym == "Watermelon" ||
+                                            sym == "Star");
+                    m_audio.playSound(isJackpot ? "jackpot" : "win");
                 }
 
+                m_player.recordGameResult("Slots", m_lastMultiplier > 0.0);
                 m_state = SlotState::Result;
                 refreshTexts();
                 updateButtonStates();

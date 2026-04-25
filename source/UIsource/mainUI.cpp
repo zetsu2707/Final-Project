@@ -1,19 +1,23 @@
-﻿// Description: Implementation file for the MainUI start menu/controller class.
+// Description: Implementation file for the MainUI start menu/controller class.
 // Related Files: MainUI.h, Player.h, CasinoGameUI.h
 // Date Created: 4/7/2026
-// Last Edited: 4/20/2026
+// Last Edited: 4/24/2026
 
 #include "UIheaders/MainUI.h"
 #include "Player.h"
 #include "UIheaders/CasinoGameUI.h"
 
 #include <algorithm>
+#include <cmath>
+#include <iomanip>
 #include <optional>
 #include <sstream>
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Button
+// ─────────────────────────────────────────────────────────────────────────────
 MainUI::Button::Button(const sf::Font& font,
     const std::string& label,
-
     sf::Vector2f position,
     sf::Vector2f size)
     : box(size), text(font, label, 36)
@@ -36,6 +40,16 @@ MainUI::Button::Button(const sf::Font& font,
         boxBounds.position.x + boxBounds.size.x / 2.f,
         boxBounds.position.y + boxBounds.size.y / 2.f
         });
+}
+
+void MainUI::Button::setLabel(const sf::Font& font, const std::string& label)
+{
+    text = sf::Text(font, label, 28);
+    text.setFillColor(sf::Color::White);
+    const sf::FloatRect tb = text.getLocalBounds();
+    text.setOrigin({ tb.position.x + tb.size.x / 2.f, tb.position.y + tb.size.y / 2.f });
+    const sf::FloatRect bb = box.getGlobalBounds();
+    text.setPosition({ bb.position.x + bb.size.x / 2.f, bb.position.y + bb.size.y / 2.f });
 }
 
 bool MainUI::Button::contains(sf::Vector2f point) const
@@ -77,6 +91,9 @@ void MainUI::Button::draw(sf::RenderWindow& window) const
     window.draw(text);
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// InputField  (still used for the New Game name input)
+// ─────────────────────────────────────────────────────────────────────────────
 MainUI::InputField::InputField(const sf::Font& font,
     const std::string& placeholderText,
     sf::Vector2f position,
@@ -131,6 +148,9 @@ void MainUI::InputField::draw(sf::RenderWindow& window) const
     window.draw(text);
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Constructor
+// ─────────────────────────────────────────────────────────────────────────────
 MainUI::MainUI(AudioManager& audio)
     : m_audio(audio),
     m_font("assets/arial.ttf"),
@@ -145,11 +165,10 @@ MainUI::MainUI(AudioManager& audio)
     m_noteContinuePrompt(m_font, "[ Click anywhere to continue ]", 26),
     m_status(m_font, "Main Menu", 32),
     m_statisticsTitle(m_font, "STATISTICS", 58),
-    m_statisticsBody(m_font, "Statistics are still a work in progress.\nThis option is a placeholder for now.", 34),
+    m_statisticsBody(m_font, "", 24),
     m_newGameTitle(m_font, "NEW GAME", 58),
     m_nameLabel(m_font, "Player Name", 34),
     m_loadGameTitle(m_font, "LOAD GAME", 58),
-    m_filenameLabel(m_font, "Save Filename", 34),
     m_currentScreen(Screen::GrandpaNote),
     m_activeField(ActiveField::None),
     m_newGame(m_font, "New Game", { 760.f, 320.f }, { 400.f, 85.f }),
@@ -159,9 +178,7 @@ MainUI::MainUI(AudioManager& audio)
     m_exitButton(m_font, "Exit", { 760.f, 760.f }, { 400.f, 85.f }),
     m_backButton(m_font, "Back", { 1500.f, 930.f }, { 260.f, 80.f }),
     m_createPlayerButton(m_font, "Create Player", { 780.f, 760.f }, { 360.f, 85.f }),
-    m_loadSaveButton(m_font, "Load Save", { 780.f, 640.f }, { 360.f, 85.f }),
-    m_nameInput(m_font, "Enter player name", { 660.f, 420.f }, { 600.f, 70.f }, false),
-    m_filenameInput(m_font, "Enter save filename", { 660.f, 440.f }, { 600.f, 70.f }, false)
+    m_nameInput(m_font, "Enter player name", { 660.f, 420.f }, { 600.f, 70.f }, false)
 {
     const sf::Vector2u backgroundSize = m_backgroundTexture.getSize();
     m_backgroundSprite.setScale({
@@ -251,25 +268,17 @@ MainUI::MainUI(AudioManager& audio)
     m_status.setPosition({ 790.f, 950.f });
 
     m_statisticsTitle.setFillColor(sf::Color::White);
-    m_statisticsBody.setFillColor(sf::Color::White);
-
     {
         const sf::FloatRect bounds = m_statisticsTitle.getLocalBounds();
         m_statisticsTitle.setOrigin({
             bounds.position.x + bounds.size.x / 2.f,
             bounds.position.y
             });
-        m_statisticsTitle.setPosition({ 960.f, 140.f });
+        m_statisticsTitle.setPosition({ 960.f, 30.f });
     }
 
-    {
-        const sf::FloatRect bounds = m_statisticsBody.getLocalBounds();
-        m_statisticsBody.setOrigin({
-            bounds.position.x + bounds.size.x / 2.f,
-            bounds.position.y
-            });
-        m_statisticsBody.setPosition({ 960.f, 360.f });
-    }
+    m_statisticsBody.setFillColor(sf::Color(220, 220, 220));
+    m_statisticsBody.setPosition({ 60.f, 700.f });
 
     m_newGameTitle.setFillColor(sf::Color::White);
     m_newGameTitle.setPosition({ 790.f, 150.f });
@@ -278,11 +287,16 @@ MainUI::MainUI(AudioManager& audio)
     m_nameLabel.setPosition({ 660.f, 360.f });
 
     m_loadGameTitle.setFillColor(sf::Color::White);
-    m_loadGameTitle.setPosition({ 790.f, 170.f });
+    {
+        const sf::FloatRect bounds = m_loadGameTitle.getLocalBounds();
+        m_loadGameTitle.setOrigin({
+            bounds.position.x + bounds.size.x / 2.f,
+            bounds.position.y
+            });
+        m_loadGameTitle.setPosition({ 960.f, 30.f });
+    }
 
-    m_filenameLabel.setFillColor(sf::Color::White);
-    m_filenameLabel.setPosition({ 660.f, 380.f });
-
+    // ── Instructions setup ────────────────────────────────────────────────
     const std::vector<std::string> lines = {
         "BLACKJACK:",
         "- Goal: get as close to 21 as possible without going over.",
@@ -334,6 +348,46 @@ MainUI::MainUI(AudioManager& audio)
         m_instructionLines.push_back(textLine);
         y += 30.f;
     }
+
+    // ── Save slot buttons (shared by Load Game and Statistics screens) ────
+    // Layout: 2 columns of 5, each button 820×80, left col x=55, right col x=1045
+    for (int i = 1; i <= 10; ++i)
+    {
+        const int row = (i <= 5) ? (i - 1) : (i - 6);
+        const float x = (i <= 5) ? 55.f : 1045.f;
+        const float slotY = 130.f + static_cast<float>(row) * 95.f;
+        m_slotButtons.emplace_back(m_font,
+            "Slot " + std::to_string(i),
+            sf::Vector2f{ x, slotY },
+            sf::Vector2f{ 820.f, 80.f });
+    }
+
+    refreshSlotButtons();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// refreshSlotButtons
+// ─────────────────────────────────────────────────────────────────────────────
+void MainUI::refreshSlotButtons()
+{
+    for (int i = 1; i <= 10; ++i)
+    {
+        Player temp("", 0.0);
+        if (temp.loadFromFile(Player::getSlotFilename(i)))
+        {
+            std::ostringstream label;
+            label << std::fixed << std::setprecision(2);
+            label << "Slot " << i << ":  " << temp.getName()
+                  << "   $" << temp.getBalance()
+                  << "   [" << temp.getGamesPlayed() << " games]";
+            m_slotButtons[static_cast<std::size_t>(i - 1)].setLabel(m_font, label.str());
+        }
+        else
+        {
+            m_slotButtons[static_cast<std::size_t>(i - 1)].setLabel(
+                m_font, "Slot " + std::to_string(i) + ":  [Empty]");
+        }
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -341,12 +395,10 @@ MainUI::MainUI(AudioManager& audio)
 // ─────────────────────────────────────────────────────────────────────────────
 void MainUI::drawGrandpaNote(sf::RenderWindow& window)
 {
-    // Fade in over 1.5 seconds
     const float elapsed = m_noteAlphaClock.getElapsedTime().asSeconds();
     m_noteAlpha = std::min(elapsed / 1.5f, 1.0f) * 255.f;
     const uint8_t a = static_cast<uint8_t>(m_noteAlpha);
 
-    // Blink the continue prompt
     uint8_t promptAlpha = 0;
     if (elapsed > 1.5f)
     {
@@ -357,7 +409,6 @@ void MainUI::drawGrandpaNote(sf::RenderWindow& window)
     m_noteBackground.setFillColor(sf::Color(10, 8, 5, a));
     window.draw(m_noteBackground);
 
-    const sf::Vector2u noteSize = m_noteTexture.getSize();
     sf::Color paperColor = m_notePaper.getFillColor();
     paperColor.a = a;
     m_notePaper.setFillColor(paperColor);
@@ -386,12 +437,10 @@ void MainUI::drawIntroScreen(sf::RenderWindow& window)
 {
     window.draw(m_backgroundSprite);
 
-    // Fade in over 2 seconds
     const float elapsed = m_introClock.getElapsedTime().asSeconds();
     m_introAlpha = std::min(elapsed / 2.0f, 1.0f) * 255.f;
     const uint8_t a = static_cast<uint8_t>(m_introAlpha);
 
-    // Prompt blinks after fully faded in
     uint8_t promptAlpha = a;
     if (elapsed > 2.5f)
     {
@@ -409,7 +458,7 @@ void MainUI::drawIntroScreen(sf::RenderWindow& window)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Draw: other screens (unchanged from original)
+// Draw: Main Menu
 // ─────────────────────────────────────────────────────────────────────────────
 void MainUI::drawMainMenu(sf::RenderWindow& window)
 {
@@ -423,6 +472,9 @@ void MainUI::drawMainMenu(sf::RenderWindow& window)
     window.draw(m_status);
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Draw: Instructions
+// ─────────────────────────────────────────────────────────────────────────────
 void MainUI::drawInstructionsScreen(sf::RenderWindow& window)
 {
     window.draw(m_backgroundSprite);
@@ -433,14 +485,73 @@ void MainUI::drawInstructionsScreen(sf::RenderWindow& window)
     m_backButton.draw(window);
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Draw: Statistics
+// ─────────────────────────────────────────────────────────────────────────────
 void MainUI::drawStatisticsScreen(sf::RenderWindow& window)
 {
     window.draw(m_backgroundSprite);
-    window.draw(m_statisticsTitle);
-    window.draw(m_statisticsBody);
-    m_backButton.draw(window);
+
+    if (!m_statsSlotSelected)
+    {
+        // ── Slot selection view ───────────────────────────────────────────
+        window.draw(m_statisticsTitle);
+
+        sf::Text hint(m_font, "Select a save slot to view its statistics:", 28);
+        hint.setFillColor(sf::Color(200, 200, 200));
+        {
+            const sf::FloatRect b = hint.getLocalBounds();
+            hint.setOrigin({ b.position.x + b.size.x / 2.f, b.position.y });
+            hint.setPosition({ 960.f, 105.f });
+        }
+        window.draw(hint);
+
+        for (Button& btn : m_slotButtons)
+            btn.draw(window);
+
+        m_backButton.draw(window);
+    }
+    else
+    {
+        // ── Full-screen stats panel ───────────────────────────────────────
+        sf::RectangleShape overlay({ 1920.f, 1080.f });
+        overlay.setFillColor(sf::Color(5, 5, 15, 210));
+        window.draw(overlay);
+
+        sf::RectangleShape panel({ 1400.f, 870.f });
+        panel.setPosition({ 260.f, 100.f });
+        panel.setFillColor(sf::Color(18, 18, 35, 240));
+        panel.setOutlineColor(sf::Color(255, 215, 0));
+        panel.setOutlineThickness(2.f);
+        window.draw(panel);
+
+        // Gold divider under title area
+        sf::RectangleShape divider({ 1360.f, 2.f });
+        divider.setPosition({ 280.f, 195.f });
+        divider.setFillColor(sf::Color(255, 215, 0, 160));
+        window.draw(divider);
+
+        // Second divider above per-game section
+        sf::RectangleShape divider2({ 1360.f, 2.f });
+        divider2.setPosition({ 280.f, 385.f });
+        divider2.setFillColor(sf::Color(255, 215, 0, 80));
+        window.draw(divider2);
+
+        m_statisticsBody.setPosition({ 290.f, 120.f });
+        window.draw(m_statisticsBody);
+
+        sf::Text backHint(m_font, "[ Back ] - Return to slot selection", 24);
+        backHint.setFillColor(sf::Color(160, 160, 160));
+        backHint.setPosition({ 290.f, 995.f });
+        window.draw(backHint);
+
+        m_backButton.draw(window);
+    }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Draw: New Game
+// ─────────────────────────────────────────────────────────────────────────────
 void MainUI::drawNewGameScreen(sf::RenderWindow& window)
 {
     window.draw(m_backgroundSprite);
@@ -452,13 +563,17 @@ void MainUI::drawNewGameScreen(sf::RenderWindow& window)
     window.draw(m_status);
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Draw: Load Game  (10 slot buttons)
+// ─────────────────────────────────────────────────────────────────────────────
 void MainUI::drawLoadGameScreen(sf::RenderWindow& window)
 {
     window.draw(m_backgroundSprite);
     window.draw(m_loadGameTitle);
-    window.draw(m_filenameLabel);
-    m_filenameInput.draw(window);
-    m_loadSaveButton.draw(window);
+
+    for (Button& btn : m_slotButtons)
+        btn.draw(window);
+
     m_backButton.draw(window);
     window.draw(m_status);
 }
@@ -468,29 +583,16 @@ void MainUI::drawLoadGameScreen(sf::RenderWindow& window)
 // ─────────────────────────────────────────────────────────────────────────────
 void MainUI::handleBackspace()
 {
-    switch (m_activeField)
+    if (m_activeField == ActiveField::NewGameName)
     {
-    case ActiveField::NewGameName:
         if (!m_nameInput.value.empty())
             m_nameInput.value.pop_back();
         m_nameInput.syncText();
-        break;
-
-    case ActiveField::LoadFilename:
-        if (!m_filenameInput.value.empty())
-            m_filenameInput.value.pop_back();
-        m_filenameInput.syncText();
-        break;
-
-    case ActiveField::None:
-    default:
-        break;
     }
 }
 
 void MainUI::handleTextEntered(const sf::Event& event)
 {
-    // On the note screen any key press advances to the intro
     if (m_currentScreen == Screen::GrandpaNote)
     {
         m_currentScreen = Screen::Intro;
@@ -498,7 +600,6 @@ void MainUI::handleTextEntered(const sf::Event& event)
         return;
     }
 
-    // On the intro screen any key press advances to the main menu
     if (m_currentScreen == Screen::Intro)
     {
         m_currentScreen = Screen::MainMenu;
@@ -522,27 +623,10 @@ void MainUI::handleTextEntered(const sf::Event& event)
 
     const char character = static_cast<char>(unicode);
 
-    switch (m_activeField)
+    if (m_activeField == ActiveField::NewGameName && m_nameInput.value.size() < 24)
     {
-    case ActiveField::NewGameName:
-        if (m_nameInput.value.size() < 24)
-        {
-            m_nameInput.value.push_back(character);
-            m_nameInput.syncText();
-        }
-        break;
-
-    case ActiveField::LoadFilename:
-        if (m_filenameInput.value.size() < 40)
-        {
-            m_filenameInput.value.push_back(character);
-            m_filenameInput.syncText();
-        }
-        break;
-
-    case ActiveField::None:
-    default:
-        break;
+        m_nameInput.value.push_back(character);
+        m_nameInput.syncText();
     }
 }
 
@@ -550,9 +634,11 @@ void MainUI::clearFormState()
 {
     m_activeField = ActiveField::None;
     m_nameInput.setActive(false);
-    m_filenameInput.setActive(false);
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// startNewGame  — slot 0 means the CasinoGameUI will prompt to pick a slot
+// ─────────────────────────────────────────────────────────────────────────────
 void MainUI::startNewGame(sf::RenderWindow& window)
 {
     if (m_nameInput.value.empty())
@@ -570,66 +656,33 @@ void MainUI::startNewGame(sf::RenderWindow& window)
         m_status.setString(stream.str());
     }
 
-    CasinoGameUI casinoMenu(player, m_audio);
+    CasinoGameUI casinoMenu(player, m_audio, 0);
     casinoMenu.run(window);
 
     m_currentScreen = Screen::MainMenu;
     clearFormState();
+    refreshSlotButtons();
 }
 
-void MainUI::startLoadGame(sf::RenderWindow& window)
-{
-    if (m_filenameInput.value.empty())
-    {
-        m_status.setString("Enter a save filename.");
-        return;
-    }
-
-    Player player("Unknown Player");
-
-    if (player.loadFromFile(m_filenameInput.value))
-    {
-        {
-            std::ostringstream stream;
-            stream << "Loaded: " << player.getName()
-                << " | Balance: $" << player.getBalance();
-            m_status.setString(stream.str());
-        }
-
-        CasinoGameUI casinoMenu(player, m_audio);
-        casinoMenu.run(window);
-
-        m_currentScreen = Screen::MainMenu;
-        clearFormState();
-    }
-    else
-    {
-        m_status.setString("Failed to load save file.");
-    }
-}
-
+// ─────────────────────────────────────────────────────────────────────────────
+// handleMouseClick
+// ─────────────────────────────────────────────────────────────────────────────
 void MainUI::handleMouseClick(const sf::Event& event, sf::RenderWindow& window)
 {
-    // Clicking on the note advances to the intro
     if (m_currentScreen == Screen::GrandpaNote)
     {
-        if (const auto* mousePressed = event.getIf<sf::Event::MouseButtonPressed>())
+        if (event.getIf<sf::Event::MouseButtonPressed>())
         {
-            (void)mousePressed;
             m_currentScreen = Screen::Intro;
             m_introClock.restart();
         }
         return;
     }
 
-    // Clicking anywhere on the intro advances to main menu
     if (m_currentScreen == Screen::Intro)
     {
-        if (const auto* mousePressed = event.getIf<sf::Event::MouseButtonPressed>())
-        {
-            (void)mousePressed;
+        if (event.getIf<sf::Event::MouseButtonPressed>())
             m_currentScreen = Screen::MainMenu;
-        }
         return;
     }
 
@@ -648,7 +701,8 @@ void MainUI::handleMouseClick(const sf::Event& event, sf::RenderWindow& window)
         {
             m_audio.playSound("button");
             m_currentScreen = Screen::LoadGame;
-            m_status.setString("Load an existing save.");
+            m_status.setString("Select a slot to load.");
+            refreshSlotButtons();
             clearFormState();
             return;
         }
@@ -657,7 +711,9 @@ void MainUI::handleMouseClick(const sf::Event& event, sf::RenderWindow& window)
         {
             m_audio.playSound("button");
             m_currentScreen = Screen::Statistics;
-            m_status.setString("Statistics");
+            m_statisticsBody.setString("");
+            m_statsSlotSelected = false;
+            refreshSlotButtons();
             clearFormState();
             return;
         }
@@ -666,7 +722,6 @@ void MainUI::handleMouseClick(const sf::Event& event, sf::RenderWindow& window)
         {
             m_audio.playSound("button");
             m_currentScreen = Screen::Instructions;
-            m_status.setString("Instructions");
             clearFormState();
             return;
         }
@@ -678,16 +733,115 @@ void MainUI::handleMouseClick(const sf::Event& event, sf::RenderWindow& window)
             return;
         }
     }
-    else if (m_currentScreen == Screen::Instructions ||
-        m_currentScreen == Screen::Statistics)
+    else if (m_currentScreen == Screen::Instructions)
     {
         if (m_backButton.isClicked(event, window))
         {
             m_audio.playSound("button");
             m_currentScreen = Screen::MainMenu;
             m_status.setString("Main Menu");
-            clearFormState();
             return;
+        }
+    }
+    else if (m_currentScreen == Screen::Statistics)
+    {
+        if (m_backButton.isClicked(event, window))
+        {
+            m_audio.playSound("button");
+            if (m_statsSlotSelected)
+            {
+                m_statsSlotSelected = false;
+                m_statisticsBody.setString("");
+            }
+            else
+            {
+                m_currentScreen = Screen::MainMenu;
+                m_statisticsBody.setString("");
+            }
+            return;
+        }
+
+        if (!m_statsSlotSelected)
+        {
+            const auto* mousePressed = event.getIf<sf::Event::MouseButtonPressed>();
+            if (mousePressed && mousePressed->button == sf::Mouse::Button::Left)
+            {
+                const sf::Vector2f mouseCoords =
+                    window.mapPixelToCoords(mousePressed->position, window.getDefaultView());
+
+                for (int i = 0; i < 10; ++i)
+                {
+                    if (m_slotButtons[static_cast<std::size_t>(i)].contains(mouseCoords))
+                    {
+                        m_audio.playSound("button");
+                        Player temp("", 0.0);
+                        if (!temp.loadFromFile(Player::getSlotFilename(i + 1)))
+                        {
+                            m_status.setString("Slot " + std::to_string(i + 1) + " is empty.");
+                        }
+                        else
+                        {
+                            const int played  = temp.getGamesPlayed();
+                            const int won     = temp.getGamesWon();
+                            const int lost    = temp.getGamesLost();
+                            const double winPct = played > 0
+                                ? 100.0 * won / played : 0.0;
+                            const double net  = temp.getNetProfit();
+
+                            std::ostringstream ss;
+                            ss << std::fixed << std::setprecision(2);
+
+                            // Header line — player name in the body (drawn as one sf::Text)
+                            ss << temp.getName() << "   (Slot " << (i + 1) << ")\n\n";
+
+                            // Overall financials
+                            ss << "Balance:         $" << temp.getBalance() << "\n";
+                            ss << "Total Wagered:   $" << temp.getTotalBetted() << "\n";
+                            ss << "Total Returned:  $" << temp.getTotalWon() << "\n";
+                            ss << "Net Profit:      " << (net >= 0.0 ? "+" : "") << "$" << net << "\n\n";
+
+                            // Overall W/L
+                            ss << "Games Played:  " << played
+                               << "   Won: " << won
+                               << "   Lost: " << lost;
+                            if (played > 0)
+                                ss << "   ("
+                                   << std::setprecision(1) << winPct << "% win rate)";
+                            ss << "\n\n";
+                            ss << std::setprecision(2);
+
+                            // Per-game breakdown
+                            ss << "Per-Game Breakdown:\n";
+                            const auto& stats = temp.getGameStats();
+                            if (stats.empty())
+                            {
+                                ss << "  No game history recorded yet.\n";
+                            }
+                            else
+                            {
+                                for (const auto& [name, stat] : stats)
+                                {
+                                    const double gNet = stat.netEarnings;
+                                    ss << "  " << name << ":   "
+                                       << stat.played << " played,  "
+                                       << stat.won << " won,  "
+                                       << stat.played - stat.won << " lost   |   Net: "
+                                       << (gNet >= 0.0 ? "+" : "") << "$" << gNet << "\n";
+                                }
+                            }
+
+                            ss << "\n";
+                            ss << "Highest Earning Game:  " << temp.getHighestEarningGame() << "\n";
+                            ss << "Most Wins Game:        " << temp.getMostWinsGame();
+
+                            m_statisticsBody.setCharacterSize(26);
+                            m_statisticsBody.setString(ss.str());
+                            m_statsSlotSelected = true;
+                        }
+                        return;
+                    }
+                }
+            }
         }
     }
     else if (m_currentScreen == Screen::NewGame)
@@ -699,14 +853,8 @@ void MainUI::handleMouseClick(const sf::Event& event, sf::RenderWindow& window)
                 window.mapPixelToCoords(mousePressed->position, window.getDefaultView());
 
             const bool clickedName = m_nameInput.contains(mouseCoords);
-
             m_nameInput.setActive(clickedName);
-            m_filenameInput.setActive(false);
-
-            if (clickedName)
-                m_activeField = ActiveField::NewGameName;
-            else
-                m_activeField = ActiveField::None;
+            m_activeField = clickedName ? ActiveField::NewGameName : ActiveField::None;
         }
 
         if (m_createPlayerButton.isClicked(event, window))
@@ -727,37 +875,42 @@ void MainUI::handleMouseClick(const sf::Event& event, sf::RenderWindow& window)
     }
     else if (m_currentScreen == Screen::LoadGame)
     {
+        if (m_backButton.isClicked(event, window))
+        {
+            m_audio.playSound("button");
+            m_currentScreen = Screen::MainMenu;
+            m_status.setString("Main Menu");
+            return;
+        }
+
         const auto* mousePressed = event.getIf<sf::Event::MouseButtonPressed>();
         if (mousePressed && mousePressed->button == sf::Mouse::Button::Left)
         {
             const sf::Vector2f mouseCoords =
                 window.mapPixelToCoords(mousePressed->position, window.getDefaultView());
 
-            const bool clickedFilename = m_filenameInput.contains(mouseCoords);
+            for (int i = 0; i < 10; ++i)
+            {
+                if (m_slotButtons[static_cast<std::size_t>(i)].contains(mouseCoords))
+                {
+                    m_audio.playSound("button");
+                    Player player("", 0.0);
+                    if (!player.loadFromFile(Player::getSlotFilename(i + 1)))
+                    {
+                        m_status.setString("Slot " + std::to_string(i + 1) + " is empty.");
+                    }
+                    else
+                    {
+                        CasinoGameUI casinoMenu(player, m_audio, i + 1);
+                        casinoMenu.run(window);
 
-            m_nameInput.setActive(false);
-            m_filenameInput.setActive(clickedFilename);
-
-            if (clickedFilename)
-                m_activeField = ActiveField::LoadFilename;
-            else
-                m_activeField = ActiveField::None;
-        }
-
-        if (m_loadSaveButton.isClicked(event, window))
-        {
-            m_audio.playSound("button");
-            startLoadGame(window);
-            return;
-        }
-
-        if (m_backButton.isClicked(event, window))
-        {
-            m_audio.playSound("button");
-            m_currentScreen = Screen::MainMenu;
-            m_status.setString("Main Menu");
-            clearFormState();
-            return;
+                        m_currentScreen = Screen::MainMenu;
+                        m_status.setString("Main Menu");
+                        refreshSlotButtons();
+                    }
+                    return;
+                }
+            }
         }
     }
 }
@@ -790,10 +943,18 @@ void MainUI::run(sf::RenderWindow& window)
             m_instructions.update(window);
             m_exitButton.update(window);
         }
-        else if (m_currentScreen == Screen::Instructions ||
-            m_currentScreen == Screen::Statistics)
+        else if (m_currentScreen == Screen::Instructions)
         {
             m_backButton.update(window);
+        }
+        else if (m_currentScreen == Screen::Statistics)
+        {
+            m_backButton.update(window);
+            if (!m_statsSlotSelected)
+            {
+                for (Button& btn : m_slotButtons)
+                    btn.update(window);
+            }
         }
         else if (m_currentScreen == Screen::NewGame)
         {
@@ -802,8 +963,9 @@ void MainUI::run(sf::RenderWindow& window)
         }
         else if (m_currentScreen == Screen::LoadGame)
         {
-            m_loadSaveButton.update(window);
             m_backButton.update(window);
+            for (Button& btn : m_slotButtons)
+                btn.update(window);
         }
 
         window.clear();

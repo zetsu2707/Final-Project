@@ -414,6 +414,11 @@ void PokerUI::playRoundResultSound()
     if (!m_poker.isRoundOver())
         return;
 
+    if (!m_roundStatsRecorded) {
+        m_player.recordGameResult("Poker", isPlayerWinningResult(m_poker.getRoundResult()));
+        m_roundStatsRecorded = true;
+    }
+
     if (isPlayerWinningResult(m_poker.getRoundResult()))
         m_audio.playSound("win");
 }
@@ -480,6 +485,7 @@ void PokerUI::handleMouseClick(const sf::Event& event, sf::RenderWindow& window)
         m_wagerFieldActive = false;
         m_wagerInput.setActive(false);
 
+        m_roundStatsRecorded = false;
         const bool roundStarted = m_poker.startRound(m_player, getParsedWager());
 
         if (roundStarted)
