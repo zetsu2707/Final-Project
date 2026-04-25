@@ -49,20 +49,22 @@ A assortment of five short games structured similarly to a casino hall. Beginnin
 ---
 
 ## How to Run
+A prebuilt CasinoUI.exe and all required DLLs are included in the repository, just double-click Casino.exe to play. No installation needed.
+
+## Build From Source
 
 ### Requirements
-- Visual Studio 2022
-- SFML 3.0.2 (Graphics, Audio, Window modules)
+- MSYS2 with the MinGW-w64 toolchain
+- SFML 3.0.0+
 
 ### Steps
 1. Clone the repository:
    ```
    git clone https://github.com/zetsu2707/Final-Project.git
    ```
-2. Open `CasinoUI/CasinoUI.sln` in Visual Studio 2022
-3. Ensure SFML is configured in the project's include/library directories
-4. Build the project (**Ctrl+Shift+B**)
-5. Run the application (**F5**)
+2. Edit any code as wanted
+3. Run `build.bat` 
+4. Run `CasinoUI.exe`
 
 ### Notes
 - The `assets/` folder must remain in the same directory as the executable
