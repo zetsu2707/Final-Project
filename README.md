@@ -94,7 +94,7 @@ Used to generate several visual assets for non-commercial/educational purposes.
 | `assets/game_selection_background.jpg` | Game selection screen background |
 | `assets/menu_background.jpg` | Main menu background |
 | `assets/player_name_panel.png` | Player name input panel |
- 
+[https://chatgpt.com/]()
 All assets were reviewed and integrated by our team.
 
 ### External Resources
